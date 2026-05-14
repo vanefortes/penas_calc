@@ -19,6 +19,7 @@ class AppState extends ChangeNotifier {
   String _usuarioOab  = '';
   String _usuarioEmail = '';
   bool   _biometriaAtiva = false;
+  String _usuarioFoto = ''; // caminho local da foto de perfil
 
   ModoCalculo get modoCalculo => _modoCalculo;
   ThemeMode   get themeMode   => _themeMode;
@@ -30,6 +31,7 @@ class AppState extends ChangeNotifier {
   String get usuarioOab   => _usuarioOab;
   String get usuarioEmail => _usuarioEmail;
   bool   get biometriaAtiva => _biometriaAtiva;
+  String get usuarioFoto  => _usuarioFoto;
 
   AppState() { _load(); }
 
@@ -48,6 +50,7 @@ class AppState extends ChangeNotifier {
     _usuarioOab     = p.getString('usuario_oab')   ?? '';
     _usuarioEmail   = p.getString('usuario_email') ?? '';
     _biometriaAtiva = p.getBool('biometria_ativa') ?? false;
+    _usuarioFoto    = p.getString('usuario_foto')  ?? '';
 
     notifyListeners();
   }
@@ -87,6 +90,12 @@ class AppState extends ChangeNotifier {
   Future<void> _save() async {
     (await SharedPreferences.getInstance()).setStringList(
         'historico', _historico.map((h) => json.encode(h.toJson())).toList());
+  }
+
+  Future<void> setFotoPerfil(String caminho) async {
+    _usuarioFoto = caminho;
+    notifyListeners();
+    (await SharedPreferences.getInstance()).setString('usuario_foto', caminho);
   }
 
   // ───── NOVO: primeiro acesso ─────

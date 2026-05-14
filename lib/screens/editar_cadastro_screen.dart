@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../widgets/avatar_perfil.dart';
 
 class EditarCadastroScreen extends StatefulWidget {
   const EditarCadastroScreen({super.key});
@@ -212,6 +213,20 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                         style: GoogleFonts.inter(fontSize: 12, color: primary, height: 1.4),
                       ),
                     ),
+                  ]),
+                ),
+
+                // Avatar editável centralizado
+                Center(
+                  child: Column(children: [
+                    const AvatarPerfil(size: 90, editavel: true),
+                    const SizedBox(height: 8),
+                    Text('Toque para alterar a foto',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Theme.of(context).textTheme.labelSmall?.color,
+                      )),
+                    const SizedBox(height: 20),
                   ]),
                 ),
 
