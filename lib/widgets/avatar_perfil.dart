@@ -29,14 +29,13 @@ class AvatarPerfil extends StatelessWidget {
       return;
     }
 
-    // Mobile — bottom sheet com câmera e galeria
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
-        final primary = Theme.of(ctx).colorScheme.primary;
-        final temFoto = ctx.read<AppState>().usuarioFoto.isNotEmpty;
+        final primary  = Theme.of(ctx).colorScheme.primary;
+        final temFoto  = ctx.read<AppState>().usuarioFoto.isNotEmpty;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -92,7 +91,6 @@ class AvatarPerfil extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    // null = remover
     if (source == null) {
       if (context.read<AppState>().usuarioFoto.isNotEmpty) {
         await context.read<AppState>().setFotoPerfil('');
@@ -103,18 +101,15 @@ class AvatarPerfil extends StatelessWidget {
     final picked = await picker.pickImage(
       source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
     if (picked == null || !context.mounted) return;
-
     final bytes = await picked.readAsBytes();
     final dataUrl = _toDataUrl(bytes, picked.name);
     await context.read<AppState>().setFotoPerfil(dataUrl);
   }
 
-  /// Converte bytes para data URL usando dart:convert (confiável em todas plataformas)
   String _toDataUrl(Uint8List bytes, String filename) {
     final ext  = filename.split('.').last.toLowerCase();
     final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
-    final b64  = base64Encode(bytes); // dart:convert — sem bugs
-    return 'data:$mime;base64,$b64';
+    return 'data:$mime;base64,${base64Encode(bytes)}';
   }
 
   @override
@@ -123,37 +118,55 @@ class AvatarPerfil extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final foto    = state.usuarioFoto;
     final nome    = state.usuarioNome;
-
     final hasPhoto = foto.startsWith('data:');
 
-    ImageProvider? imageProvider;
+    Uint8List? bytes;
     if (hasPhoto) {
-      // Extrai só a parte base64 após a vírgula e decodifica com dart:convert
-      final b64   = foto.split(',').last;
-      final bytes = base64Decode(b64); // dart:convert — sem bugs
-      imageProvider = MemoryImage(bytes);
+      bytes = base64Decode(foto.split(',').last);
     }
 
-    Widget avatar = Container(
-      width: size, height: size,
+    Widget avatar = ClipOval(
+      child: Container(
+        width: size, height: size,
+        color: primary.withOpacity(0.12),
+        child: hasPhoto && bytes != null
+            ? OverflowBox(
+                maxWidth: double.infinity,
+                maxHeight: double.infinity,
+                child: Transform.translate(
+                  offset: Offset(state.fotoOffsetX, state.fotoOffsetY),
+                  child: Transform.scale(
+                    scale: state.fotoScale,
+                    child: Image.memory(
+                      bytes,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              )
+            : Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: primary.withOpacity(0.12)),
+                child: nome.isNotEmpty
+                    ? Text(_iniciais(nome),
+                        style: GoogleFonts.inter(
+                          fontSize: size * 0.32,
+                          fontWeight: FontWeight.w700,
+                          color: primary))
+                    : Icon(Icons.person_rounded, size: size * 0.5, color: primary),
+              ),
+      ),
+    );
+
+    // Adicionar borda
+    avatar = Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: primary.withOpacity(0.12),
         border: Border.all(color: primary.withOpacity(0.3), width: 1.5),
-        image: hasPhoto && imageProvider != null
-            ? DecorationImage(image: imageProvider, fit: BoxFit.cover)
-            : null,
       ),
-      alignment: Alignment.center,
-      child: hasPhoto
-          ? null
-          : nome.isNotEmpty
-              ? Text(_iniciais(nome),
-                  style: GoogleFonts.inter(
-                    fontSize: size * 0.32,
-                    fontWeight: FontWeight.w700,
-                    color: primary))
-              : Icon(Icons.person_rounded, size: size * 0.5, color: primary),
+      child: avatar,
     );
 
     if (!editavel) return avatar;

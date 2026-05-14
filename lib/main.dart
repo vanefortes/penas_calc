@@ -16,6 +16,7 @@ import 'screens/historico_screen.dart';
 import 'screens/configuracao_screen.dart';
 import 'screens/dados_cadastrais_screen.dart';
 import 'screens/editar_cadastro_screen.dart';
+import 'screens/editor_foto_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -190,6 +191,9 @@ class _ConfigShell extends StatelessWidget {
             break;
           case '/editar-cadastro':
             page = const EditarCadastroScreen();
+            break;
+          case '/editor-foto':
+            page = const EditorFotoScreen();
             break;
           default:
             page = const ConfiguracaoScreen();
