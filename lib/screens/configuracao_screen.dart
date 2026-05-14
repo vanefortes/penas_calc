@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/app_state.dart';
 import '../models/calculo.dart';
 import '../theme/app_theme.dart';
-import 'dados_cadastrais_screen.dart';                  // ← NOVO
 
 class ConfiguracaoScreen extends StatelessWidget {
   const ConfiguracaoScreen({super.key});
@@ -23,11 +22,7 @@ class ConfiguracaoScreen extends StatelessWidget {
           _PerfilTile(
             nome: state.usuarioNome,
             oab: state.usuarioOab,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const DadosCadastraisScreen(),
-              ),
-            ),
+            onTap: () => Navigator.of(context).pushNamed('/dados-cadastrais'),
           ),
           const SizedBox(height: 24),
 
