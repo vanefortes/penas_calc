@@ -1,0 +1,332 @@
+// lib/screens/primeiro_acesso_screen.dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../services/app_state.dart';
+
+// Paleta local — independente do tema global
+class _CP {
+  static const navyDeep   = Color(0xFF050A18);
+  static const navy       = Color(0xFF0B1530);
+  static const gold       = Color(0xFFC9A961);
+  static const goldBright = Color(0xFFF0D488);
+  static const goldDeep   = Color(0xFF7A6230);
+  static const cream      = Color(0xFFF3EEDB);
+  static const textDim    = Color(0x9EE8DEC4);
+  static const textFaint  = Color(0x57E8DEC4);
+  // Cor sólida para o fundo dos campos (sem transparência)
+  static const fieldBg    = Color(0xFF0D1A35);
+}
+
+class PrimeiroAcessoScreen extends StatefulWidget {
+  const PrimeiroAcessoScreen({super.key});
+  @override
+  State<PrimeiroAcessoScreen> createState() => _PrimeiroAcessoScreenState();
+}
+
+class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
+  final _nome  = TextEditingController();
+  final _oab   = TextEditingController();
+  final _email = TextEditingController();
+  bool _biometria = true;
+
+  @override
+  void dispose() {
+    _nome.dispose(); _oab.dispose(); _email.dispose();
+    super.dispose();
+  }
+
+  Future<void> _concluir() async {
+    final state = context.read<AppState>();
+    await state.completarPrimeiroAcesso(
+      nome: _nome.text.trim(),
+      oab: _oab.text.trim(),
+      email: _email.text.trim(),
+      biometria: _biometria,
+    );
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: _CP.navyDeep,
+        body: Stack(children: [
+          // Fundo gradiente
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [_CP.navy, _CP.navyDeep],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+                child: Center(
+                  child: Text('C · P',
+                    style: GoogleFonts.cinzel(
+                      fontSize: 11, fontWeight: FontWeight.w600,
+                      letterSpacing: 11 * 0.28, color: _CP.goldBright,
+                    )),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+                  child: Column(children: [
+                    // Logo oficial
+                    Container(
+                      width: 110, height: 110,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black54, blurRadius: 22, offset: Offset(0, 8)),
+                          BoxShadow(color: Color(0x40C9A961), blurRadius: 14, offset: Offset(0, 2)),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(26),
+                        child: Image.asset('assets/logo.png', width: 110, height: 110, fit: BoxFit.contain),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text('PRIMEIRO ACESSO',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 10, letterSpacing: 10 * 0.32, color: _CP.goldBright,
+                      )),
+                    const SizedBox(height: 10),
+                    Text('Configure seu perfil',
+                      style: GoogleFonts.cinzel(
+                        fontSize: 24, fontWeight: FontWeight.w600,
+                        height: 1.2, color: _CP.cream,
+                      )),
+                    const SizedBox(height: 6),
+                    Text('Suas informações ficam salvas localmente neste dispositivo.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.cormorantGaramond(
+                        fontStyle: FontStyle.italic, fontSize: 14, color: _CP.textDim,
+                      )),
+                    const SizedBox(height: 26),
+                    _Field(label: 'Nome do(a) advogado(a)', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: true),
+                    _Field(label: 'OAB / UF',               placeholder: '123.456 / SP',        controller: _oab,   mono: true),
+                    _Field(label: 'E-mail (opcional)',       placeholder: 'contato@escritorio.com', controller: _email, keyboard: TextInputType.emailAddress),
+                    const SizedBox(height: 14),
+                    _BiometriaCard(on: _biometria, onChanged: (v) => setState(() => _biometria = v)),
+                  ]),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
+                child: _GoldButton(label: 'ACESSAR APLICATIVO', onTap: _concluir),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 18),
+                child: Text.rich(TextSpan(
+                  style: GoogleFonts.inter(fontSize: 11, color: _CP.textFaint),
+                  children: [
+                    const TextSpan(text: 'Ao continuar você concorda com os '),
+                    TextSpan(text: 'termos de uso',
+                      style: GoogleFonts.inter(fontSize: 11, color: _CP.goldBright)),
+                  ],
+                )),
+              ),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Campo de texto completamente isolado do tema global ───────────
+class _Field extends StatelessWidget {
+  final String label, placeholder;
+  final TextEditingController controller;
+  final bool mono, autofocus;
+  final TextInputType? keyboard;
+
+  const _Field({
+    required this.label,
+    required this.placeholder,
+    required this.controller,
+    this.mono = false,
+    this.autofocus = false,
+    this.keyboard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Texto e hint sempre legíveis, independente do tema global
+    final textStyle  = mono
+        ? GoogleFonts.jetBrainsMono(fontSize: 14, color: _CP.cream)
+        : GoogleFonts.inter(fontSize: 14, color: _CP.cream);
+    final hintStyle  = mono
+        ? GoogleFonts.jetBrainsMono(fontSize: 14, color: _CP.textFaint)
+        : GoogleFonts.inter(fontSize: 14, color: _CP.textFaint);
+    final radius = BorderRadius.circular(11);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Label dourado
+        Text(label.toUpperCase(),
+          style: GoogleFonts.inter(
+            fontSize: 10.5, fontWeight: FontWeight.w600,
+            letterSpacing: 10.5 * 0.16, color: _CP.goldBright,
+          )),
+        const SizedBox(height: 7),
+        // Theme local que ANULA completamente o inputDecorationTheme global
+        Theme(
+          data: ThemeData(
+            brightness: Brightness.dark,
+            colorScheme: const ColorScheme.dark(
+              primary: _CP.goldBright,
+              onSurface: _CP.cream,
+              surface: _CP.fieldBg,
+            ),
+            textSelectionTheme: const TextSelectionThemeData(
+              cursorColor: _CP.goldBright,
+              selectionColor: Color(0x44F0D488),
+              selectionHandleColor: _CP.goldBright,
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: _CP.fieldBg,          // navy sólido — nunca branco
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              hintStyle: hintStyle,
+              border:         OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: _CP.goldDeep, width: 1)),
+              enabledBorder:  OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: _CP.goldDeep, width: 1)),
+              focusedBorder:  OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: _CP.goldBright, width: 1.5)),
+              errorBorder:    OutlineInputBorder(borderRadius: radius, borderSide: const BorderSide(color: Colors.red, width: 1)),
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            autofocus: autofocus,
+            keyboardType: keyboard,
+            cursorColor: _CP.goldBright,
+            style: textStyle,
+            decoration: InputDecoration(
+              hintText: placeholder,
+              hintStyle: hintStyle,
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Toggle de biometria ───────────────────────────────────────────
+class _BiometriaCard extends StatelessWidget {
+  final bool on;
+  final ValueChanged<bool> onChanged;
+  const _BiometriaCard({required this.on, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!on),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0x0AFFFFFF),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _CP.goldDeep, width: 1),
+        ),
+        child: Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Proteção biométrica',
+              style: GoogleFonts.cinzel(fontSize: 13, fontWeight: FontWeight.w600, color: _CP.cream)),
+            const SizedBox(height: 2),
+            Text('Face ID / Touch ID ao abrir',
+              style: GoogleFonts.inter(fontSize: 11, color: _CP.textDim)),
+          ])),
+          _Toggle(on: on),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Toggle extends StatelessWidget {
+  final bool on;
+  const _Toggle({required this.on});
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 42, height: 24,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(99),
+        gradient: on ? const LinearGradient(colors: [_CP.goldDeep, _CP.goldBright]) : null,
+        color: on ? null : const Color(0x80000000),
+        border: Border.all(color: _CP.goldDeep, width: 1),
+      ),
+      child: Stack(children: [
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          left: on ? 20 : 2, top: 2,
+          child: Container(
+            width: 18, height: 18,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFFFF4D0),
+              boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 3, offset: Offset(0, 1))],
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Botão dourado ─────────────────────────────────────────────────
+class _GoldButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _GoldButton({required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity, height: 54,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [_CP.goldBright, _CP.goldDeep],
+            ),
+            boxShadow: const [BoxShadow(color: Color(0x73C9A961), blurRadius: 14, offset: Offset(0, 4))],
+          ),
+          child: Container(
+            alignment: Alignment.center,
+            child: Text(label,
+              style: GoogleFonts.cinzel(
+                fontSize: 14, fontWeight: FontWeight.w700,
+                letterSpacing: 14 * 0.16, color: _CP.navyDeep,
+              )),
+          ),
+        ),
+      ),
+    );
+  }
+}
