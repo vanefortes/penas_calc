@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
-import 'editar_cadastro_screen.dart';
 
 class DadosCadastraisScreen extends StatelessWidget {
   const DadosCadastraisScreen({super.key});
@@ -40,9 +39,7 @@ class DadosCadastraisScreen extends StatelessWidget {
   }
 
   void _abrirEdicao(BuildContext context) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => const EditarCadastroScreen(),
-    ));
+    Navigator.of(context).pushNamed('/editar-cadastro');
   }
 
   @override

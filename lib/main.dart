@@ -14,6 +14,8 @@ import 'screens/projecao_screen.dart';
 import 'screens/entre_datas_screen.dart';
 import 'screens/historico_screen.dart';
 import 'screens/configuracao_screen.dart';
+import 'screens/dados_cadastrais_screen.dart';
+import 'screens/editar_cadastro_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,7 +100,7 @@ class _MainShellState extends State<MainShell> {
     ProjecaoScreen(),
     EntreDatasScreen(),
     HistoricoScreen(),
-    ConfiguracaoScreen(),
+    _ConfigShell(), // ← Navigator interno para Config + Dados Cadastrais
   ];
 
   @override
@@ -167,6 +169,33 @@ class _MainShellState extends State<MainShell> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Navigator interno para a aba de Configurações.
+/// Permite navegar entre ConfiguracaoScreen ↔ DadosCadastraisScreen
+/// ↔ EditarCadastroScreen sem sair do MainShell.
+class _ConfigShell extends StatelessWidget {
+  const _ConfigShell();
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      onGenerateRoute: (settings) {
+        Widget page;
+        switch (settings.name) {
+          case '/dados-cadastrais':
+            page = const DadosCadastraisScreen();
+            break;
+          case '/editar-cadastro':
+            page = const EditarCadastroScreen();
+            break;
+          default:
+            page = const ConfiguracaoScreen();
+        }
+        return MaterialPageRoute(builder: (_) => page, settings: settings);
+      },
     );
   }
 }
