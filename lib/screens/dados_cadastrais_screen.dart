@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../widgets/avatar_perfil.dart';
 
 class DadosCadastraisScreen extends StatelessWidget {
   const DadosCadastraisScreen({super.key});
@@ -91,23 +92,8 @@ class DadosCadastraisScreen extends StatelessWidget {
                 ),
               ),
               child: Row(children: [
-                // Avatar com iniciais
-                Container(
-                  width: 56, height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: primary.withOpacity(0.12),
-                    border: Border.all(color: primary.withOpacity(0.3), width: 1),
-                  ),
-                  alignment: Alignment.center,
-                  child: state.usuarioNome.isNotEmpty
-                      ? Text(
-                          _iniciais(state.usuarioNome),
-                          style: GoogleFonts.inter(
-                            fontSize: 18, fontWeight: FontWeight.w700, color: primary),
-                        )
-                      : Icon(Icons.person_rounded, size: 28, color: primary),
-                ),
+                // Avatar com foto de perfil editável
+                const AvatarPerfil(size: 56, editavel: false),
                 const SizedBox(width: 16),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(

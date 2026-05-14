@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/app_state.dart';
 import '../models/calculo.dart';
 import '../theme/app_theme.dart';
+import '../widgets/avatar_perfil.dart';
 
 class ConfiguracaoScreen extends StatelessWidget {
   const ConfiguracaoScreen({super.key});
@@ -199,27 +200,7 @@ class _PerfilTile extends StatelessWidget {
           ),
           child: Row(children: [
             // Avatar
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: primary.withOpacity(0.12),
-                border: Border.all(
-                    color: primary.withOpacity(0.3), width: 0.8),
-              ),
-              alignment: Alignment.center,
-              child: preenchido
-                  ? Text(
-                      _iniciais(nome),
-                      style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: primary),
-                    )
-                  : Icon(Icons.person_add_alt_1_rounded,
-                      size: 22, color: primary),
-            ),
+            const AvatarPerfil(size: 44, editavel: false),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../widgets/avatar_perfil.dart';
 
 class EditarCadastroScreen extends StatefulWidget {
   const EditarCadastroScreen({super.key});
@@ -213,6 +214,38 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                       ),
                     ),
                   ]),
+                ),
+
+                // Avatar editável centralizado
+                SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const AvatarPerfil(size: 90, editavel: true),
+                      const SizedBox(height: 8),
+                      Text('Toque para alterar a foto',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Theme.of(context).textTheme.labelSmall?.color,
+                        )),
+                      if (context.watch<AppState>().usuarioFoto.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        TextButton.icon(
+                          onPressed: () =>
+                              Navigator.of(context).pushNamed('/editor-foto'),
+                          icon: const Icon(Icons.tune_rounded, size: 15),
+                          label: const Text('Ajustar posição da foto'),
+                          style: TextButton.styleFrom(
+                            textStyle: GoogleFonts.inter(fontSize: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
 
                 _sectionTitle(context, 'Identificação profissional'),
