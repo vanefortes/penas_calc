@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/calculo.dart';
 import '../services/app_state.dart';
+import '../services/pdf_service.dart';
 import '../widgets/common_widgets.dart';
 import '../theme/app_theme.dart';
 
@@ -105,6 +106,27 @@ class _EntreDatasScreenState extends State<EntreDatasScreen> {
         'Total em dias: ${_fmtNum(_resultado!.totalDias)}\n'
         '${_progressao ? "Progressão de regime: dias exatos\n" : ""}'
         'Data do cálculo: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}';
+  }
+
+  Future<void> _gerarPdf() async {
+    if (_resultado == null || _dataInicio == null || _dataFim == null) return;
+    final state = context.read<AppState>();
+    final r = _resultado!;
+    await PdfEntreDatas.gerar(
+      dataInicio:  _fmtDateLong(_dataInicio!),
+      dataFim:     _fmtDateLong(_dataFim!),
+      anos:        '${r.anos}',
+      meses:       '${r.meses}',
+      dias:        '${r.dias}',
+      totalDias:   _fmtNum(r.totalDias),
+      totalMeses:  NumberFormat.decimalPattern('pt_BR')
+                     .format(r.totalDias / state.modoCalculo.diasPorMes),
+      detalhes:    r.detalhes,
+      modoCalculo: state.modoCalculo.nome,
+      nome:        state.usuarioNome,
+      oab:         state.usuarioOab,
+      foto:        state.usuarioFoto,
+    );
   }
 
   @override
@@ -308,6 +330,8 @@ class _EntreDatasScreenState extends State<EntreDatasScreen> {
                 ],
               ]),
               CopyButton(textToCopy: _textoParaCopiar()),
+              const SizedBox(width: 8),
+              PdfButton(onTap: _gerarPdf),
             ],
           ),
           const SizedBox(height: 12),

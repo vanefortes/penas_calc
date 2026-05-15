@@ -237,6 +237,48 @@ class _CopyButtonState extends State<CopyButton> {
   }
 }
 
+class PdfButton extends StatefulWidget {
+  final Future<void> Function() onTap;
+  const PdfButton({super.key, required this.onTap});
+
+  @override
+  State<PdfButton> createState() => _PdfButtonState();
+}
+
+class _PdfButtonState extends State<PdfButton> {
+  bool _loading = false;
+
+  Future<void> _gerar() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onTap();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: _loading ? null : _gerar,
+      icon: _loading
+          ? const SizedBox(width: 14, height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.picture_as_pdf_rounded, size: 15),
+      label: Text(
+        _loading ? 'Gerando...' : 'PDF',
+        style: GoogleFonts.inter(fontSize: 13),
+      ),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        foregroundColor: Colors.red.shade600,
+        side: BorderSide(color: Colors.red.shade300, width: 0.5),
+      ),
+    );
+  }
+}
+
 class ProgressaoBadge extends StatelessWidget {
   const ProgressaoBadge({super.key});
 
