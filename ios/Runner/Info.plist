@@ -8,6 +8,8 @@
 	<string>Usado para tirar foto de perfil do advogado</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Usado para selecionar foto de perfil da galeria</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Usado para proteger o acesso ao aplicativo com Face ID</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -17,6 +17,7 @@ import 'screens/configuracao_screen.dart';
 import 'screens/dados_cadastrais_screen.dart';
 import 'screens/editar_cadastro_screen.dart';
 import 'screens/editor_foto_screen.dart';
+import 'screens/lock_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,8 +74,12 @@ class AppEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ok = context.watch<AppState>().primeiroAcessoConcluido;
-    return ok ? const MainShell() : const OnboardingScreen();
+    final state = context.watch<AppState>();
+    if (!state.primeiroAcessoConcluido) return const OnboardingScreen();
+    if (state.biometriaAtiva) {
+      return LockScreen(child: const MainShell());
+    }
+    return const MainShell();
   }
 }
 
