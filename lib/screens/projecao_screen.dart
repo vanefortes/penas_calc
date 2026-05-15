@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/calculo.dart';
 import '../services/app_state.dart';
+import '../services/pdf_service.dart';
 import '../widgets/common_widgets.dart';
 import '../theme/app_theme.dart';
 
@@ -138,6 +139,26 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
         'Modo: ${modo.nome}\n'
         '${_progressao ? "Progressão de regime: cálculo em dias exatos\n" : ""}'
         'Data do cálculo: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}';
+  }
+
+  Future<void> _gerarPdf() async {
+    if (_resultado == null || _dataInicio == null) return;
+    final state = context.read<AppState>();
+    final r = _resultado!;
+    await PdfProjecao.gerar(
+      dataInicio:   _fmtDate(_dataInicio!),
+      pena:         '${_anosCtrl.text}a ${_mesesCtrl.text}m ${_diasCtrl.text}d',
+      dataTermino:  _fmtDateLong(r.dataFim),
+      diaSemana:    _fmtDiaSemana(r.dataFim),
+      totalDias:    _fmtNum(r.periodo.totalDias),
+      fracao:       r.nomeFracao ?? '',
+      dataFracao:   r.dataFracao != null ? _fmtDate(r.dataFracao!) : '',
+      detalhes:     r.detalhes,
+      modoCalculo:  state.modoCalculo.nome,
+      nome:         state.usuarioNome,
+      oab:          state.usuarioOab,
+      foto:         state.usuarioFoto,
+    );
   }
 
   @override
@@ -356,6 +377,8 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
               Text('Projeção calculada',
                   style: Theme.of(context).textTheme.titleMedium),
               CopyButton(textToCopy: _textoParaCopiar()),
+              const SizedBox(width: 8),
+              PdfButton(onTap: _gerarPdf),
             ],
           ),
           const SizedBox(height: 12),

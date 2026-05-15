@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/calculo.dart';
 import '../services/app_state.dart';
+import '../services/pdf_service.dart';
 import '../widgets/common_widgets.dart';
 import '../theme/app_theme.dart';
 
@@ -140,6 +141,24 @@ class _ConverterScreenState extends State<ConverterScreen> {
               '${anosInt}a ${mesesInt}m ${diasInt}d (${_fmt(totalDias)} dias)',
           modo: modo.nome,
         ));
+  }
+
+  Future<void> _gerarPdf() async {
+    if (_resultado == null) return;
+    final state = context.read<AppState>();
+    await PdfConverter.gerar(
+      anos:        '${_resultado!.anos}',
+      meses:       '${_resultado!.meses}',
+      dias:        '${_resultado!.dias}',
+      totalDias:   _fmt(_resultado!.totalDias),
+      totalMeses:  _fmt(_resultado!.totalMeses, dec: _decimais),
+      totalAnos:   _fmt(_resultado!.totalAnos,  dec: _decimais),
+      formula:     _formula,
+      modoCalculo: state.modoCalculo.nome,
+      nome:        state.usuarioNome,
+      oab:         state.usuarioOab,
+      foto:        state.usuarioFoto,
+    );
   }
 
   void _limpar() {
@@ -345,6 +364,8 @@ class _ConverterScreenState extends State<ConverterScreen> {
               Text('Resultados',
                   style: Theme.of(context).textTheme.titleMedium),
               CopyButton(textToCopy: _textoParaCopiar()),
+              const SizedBox(width: 8),
+              PdfButton(onTap: _gerarPdf),
             ],
           ),
           const SizedBox(height: 12),
