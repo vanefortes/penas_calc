@@ -191,7 +191,32 @@ class _HistItem extends StatelessWidget {
               const SizedBox(height: 4),
               // Botão deletar item
               InkWell(
-                onTap: () => context.read<AppState>().removeHistorico(item.id),
+                onTap: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Excluir cálculo?'),
+                      content: Text(
+                        'Deseja excluir este cálculo do histórico?\n\n"${item.entrada}"',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.red.shade400),
+                          child: const Text('Excluir'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true && context.mounted) {
+                    context.read<AppState>().removeHistorico(item.id);
+                  }
+                },
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
                   padding: const EdgeInsets.all(4),
