@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 class GoogleAuthService {
   static final _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    clientId: '148303670455-g07a8j6th324qeh3jop4250748aumrg8.apps.googleusercontent.com',
   );
 
   /// Faz login com Google e retorna os dados do usuário.
