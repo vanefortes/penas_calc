@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/google_auth_service.dart';
 
 // Paleta local — independente do tema global
 class _CP {
@@ -30,6 +31,22 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   final _oab   = TextEditingController();
   final _email = TextEditingController();
   bool _biometria = true;
+  bool _googleLoading = false;
+
+  Future<void> _loginGoogle() async {
+    setState(() => _googleLoading = true);
+    final user = await GoogleAuthService.signIn();
+    if (!mounted) return;
+    setState(() => _googleLoading = false);
+    if (user == null) return;
+    setState(() {
+      _nome.text  = user.nome;
+      _email.text = user.email;
+    });
+    if (user.foto.isNotEmpty) {
+      await context.read<AppState>().setFotoPerfil(user.foto);
+    }
+  }
 
   @override
   void dispose() {
@@ -114,7 +131,44 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         fontStyle: FontStyle.italic, fontSize: 14, color: _CP.textDim,
                       )),
                     const SizedBox(height: 26),
-                    _Field(label: 'Nome do(a) advogado(a)', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: true),
+                    // Botão Google
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _googleLoading ? null : _loginGoogle,
+                        icon: _googleLoading
+                            ? const SizedBox(width: 16, height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: _CP.goldBright))
+                            : const Icon(Icons.account_circle_rounded,
+                                size: 20, color: _CP.goldBright),
+                        label: Text(
+                          _googleLoading
+                              ? 'Conectando...'
+                              : 'Preencher com conta Google',
+                          style: GoogleFonts.inter(
+                            fontSize: 13, color: _CP.cream),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          side: const BorderSide(color: _CP.goldDeep, width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(11)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('ou preencha manualmente',
+                          style: GoogleFonts.inter(
+                            fontSize: 10, color: _CP.textFaint)),
+                      ),
+                      Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
+                    ]),
+                    _Field(label: 'Nome do(a) advogado(a)', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: false),
                     _Field(label: 'OAB / UF',               placeholder: '123.456 / SP',        controller: _oab,   mono: true),
                     _Field(label: 'E-mail (opcional)',       placeholder: 'contato@escritorio.com', controller: _email, keyboard: TextInputType.emailAddress),
                     const SizedBox(height: 14),
