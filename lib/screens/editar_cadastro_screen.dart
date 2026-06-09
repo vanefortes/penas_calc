@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/google_auth_service.dart';
 import '../widgets/avatar_perfil.dart';
 
 class EditarCadastroScreen extends StatefulWidget {
@@ -70,8 +71,47 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
         _biometria != s.biometriaAtiva;
   }
 
-  Future<void> _salvar() async {
-    if (!(_formKey.currentState?.validate() ?? true)) return;
+  bool _googleLoading = false;
+
+  Future<void> _loginGoogle() async {
+    setState(() => _googleLoading = true);
+    final user = await GoogleAuthService.signIn();
+    if (!mounted) return;
+    setState(() => _googleLoading = false);
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Login cancelado ou falhou.',
+          style: GoogleFonts.inter(fontSize: 13)),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ));
+      return;
+    }
+
+    setState(() {
+      _nome.text  = user.nome;
+      _email.text = user.email;
+    });
+
+    if (user.foto.isNotEmpty) {
+      await context.read<AppState>().setFotoPerfil(user.foto);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Text('Dados importados do Google!',
+          style: GoogleFonts.inter(fontSize: 13)),
+      ]),
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ));
+  }
+
+  Future<void> _salvar() async {    if (!(_formKey.currentState?.validate() ?? true)) return;
     if (_salvando) return;
     setState(() => _salvando = true);
 
@@ -198,7 +238,7 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 20),
+                  margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: primary.withOpacity(0.07),
                     borderRadius: BorderRadius.circular(10),
@@ -215,6 +255,34 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                     ),
                   ]),
                 ),
+
+                // Botão Google
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _googleLoading ? null : _loginGoogle,
+                    icon: _googleLoading
+                        ? const SizedBox(width: 16, height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : Image.network(
+                            'https://www.google.com/favicon.ico',
+                            width: 18, height: 18,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.account_circle_rounded, size: 18),
+                          ),
+                    label: Text(
+                      _googleLoading
+                          ? 'Conectando...'
+                          : 'Importar dados do Google',
+                      style: GoogleFonts.inter(fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: primary.withOpacity(0.4)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Avatar editável centralizado
                 SizedBox(
@@ -272,7 +340,12 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                   controller: _oab,
                   icon: Icons.shield_rounded,
                   isDark: isDark,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a OAB' : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null; // opcional
+                    final ok = RegExp(r'^\d{1,6}\s*/\s*[A-Za-z]{2}$')
+                        .hasMatch(v.trim());
+                    return ok ? null : 'Use o formato: 123456/SP';
+                  },
                 ),
                 const SizedBox(height: 12),
 

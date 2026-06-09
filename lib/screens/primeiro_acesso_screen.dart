@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/google_auth_service.dart';
 
 // Paleta local — independente do tema global
 class _CP {
@@ -30,6 +31,22 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   final _oab   = TextEditingController();
   final _email = TextEditingController();
   bool _biometria = true;
+  bool _googleLoading = false;
+
+  Future<void> _loginGoogle() async {
+    setState(() => _googleLoading = true);
+    final user = await GoogleAuthService.signIn();
+    if (!mounted) return;
+    setState(() => _googleLoading = false);
+    if (user == null) return;
+    setState(() {
+      _nome.text  = user.nome;
+      _email.text = user.email;
+    });
+    if (user.foto.isNotEmpty) {
+      await context.read<AppState>().setFotoPerfil(user.foto);
+    }
+  }
 
   @override
   void dispose() {
@@ -37,16 +54,64 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     super.dispose();
   }
 
+  bool _emailValido(String email) {
+    return RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(email);
+  }
+
+  bool _oabValida(String oab) {
+    if (oab.isEmpty) return true; // OAB é opcional
+    return RegExp(
+      r'^\d{1,6}\s*/\s*[A-Za-z]{2}$',
+    ).hasMatch(oab.trim());
+  }
+
   Future<void> _concluir() async {
+    final nome  = _nome.text.trim();
+    final email = _email.text.trim();
+    final oab   = _oab.text.trim();
+
+    if (nome.isEmpty) {
+      _mostrarErro('O nome é obrigatório para continuar.');
+      return;
+    }
+
+    if (email.isEmpty) {
+      _mostrarErro('O e-mail é obrigatório para continuar.');
+      return;
+    }
+
+    if (!_emailValido(email)) {
+      _mostrarErro('Digite um e-mail válido. Ex: nome@dominio.com');
+      return;
+    }
+
+    if (!_oabValida(oab)) {
+      _mostrarErro('OAB inválida. Use o formato: 123456/SP');
+      return;
+    }
+
     final state = context.read<AppState>();
     await state.completarPrimeiroAcesso(
-      nome: _nome.text.trim(),
+      nome: nome,
       oab: _oab.text.trim(),
-      email: _email.text.trim(),
+      email: email,
       biometria: _biometria,
     );
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+  }
+
+  void _mostrarErro(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.warning_rounded, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Expanded(child: Text(mensagem, style: GoogleFonts.inter(fontSize: 13))),
+      ]),
+      backgroundColor: Colors.red.shade700,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ));
   }
 
   @override
@@ -113,10 +178,51 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                       style: GoogleFonts.cormorantGaramond(
                         fontStyle: FontStyle.italic, fontSize: 14, color: _CP.textDim,
                       )),
+                    const SizedBox(height: 6),
+                    Text('* campos obrigatórios',
+                      style: GoogleFonts.inter(
+                        fontSize: 11, color: _CP.goldBright.withOpacity(0.7))),
                     const SizedBox(height: 26),
-                    _Field(label: 'Nome do(a) advogado(a)', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: true),
+                    // Botão Google
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _googleLoading ? null : _loginGoogle,
+                        icon: _googleLoading
+                            ? const SizedBox(width: 16, height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: _CP.goldBright))
+                            : const Icon(Icons.account_circle_rounded,
+                                size: 20, color: _CP.goldBright),
+                        label: Text(
+                          _googleLoading
+                              ? 'Conectando...'
+                              : 'Preencher com conta Google',
+                          style: GoogleFonts.inter(
+                            fontSize: 13, color: _CP.cream),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          side: const BorderSide(color: _CP.goldDeep, width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(11)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('ou preencha manualmente',
+                          style: GoogleFonts.inter(
+                            fontSize: 10, color: _CP.textFaint)),
+                      ),
+                      Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
+                    ]),
+                    _Field(label: 'Nome do(a) advogado(a) *', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: false),
                     _Field(label: 'OAB / UF',               placeholder: '123.456 / SP',        controller: _oab,   mono: true),
-                    _Field(label: 'E-mail (opcional)',       placeholder: 'contato@escritorio.com', controller: _email, keyboard: TextInputType.emailAddress),
+                    _Field(label: 'E-mail *',                placeholder: 'contato@escritorio.com', controller: _email, keyboard: TextInputType.emailAddress),
                     const SizedBox(height: 14),
                     _BiometriaCard(on: _biometria, onChanged: (v) => setState(() => _biometria = v)),
                   ]),
