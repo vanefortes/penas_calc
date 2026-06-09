@@ -40,6 +40,9 @@ class AppState extends ChangeNotifier {
   double get fotoOffsetY   => _fotoOffsetY;
   double get fotoScale     => _fotoScale;
 
+  bool _carregado = false;
+  bool get carregado => _carregado;
+
   AppState() { _load(); }
 
   Future<void> _load() async {
@@ -62,6 +65,7 @@ class AppState extends ChangeNotifier {
     _fotoOffsetY    = p.getDouble('foto_offset_y') ?? 0.0;
     _fotoScale      = p.getDouble('foto_scale')    ?? 1.0;
 
+    _carregado = true;
     notifyListeners();
   }
 

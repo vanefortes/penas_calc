@@ -75,10 +75,23 @@ class AppEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+
+    // Aguarda carregar os dados do SharedPreferences
+    if (!state.carregado) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF050A18),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFC9A961)),
+        ),
+      );
+    }
+
     if (!state.primeiroAcessoConcluido) return const OnboardingScreen();
+
     if (state.biometriaAtiva) {
       return LockScreen(child: const MainShell());
     }
+
     return const MainShell();
   }
 }
