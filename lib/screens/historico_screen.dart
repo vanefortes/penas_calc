@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/app_state.dart';
+import '../services/pdf_service.dart';
 import '../models/calculo.dart';
 import '../widgets/common_widgets.dart';
 import '../theme/app_theme.dart';
@@ -173,19 +174,126 @@ class _HistItem extends StatelessWidget {
                     const SizedBox(width: 6),
                     const ProgressaoBadge(),
                   ],
+                  const Spacer(),
+                  Text(item.timestampFormatado,
+                    style: GoogleFonts.inter(fontSize: 10,
+                      color: Theme.of(context).textTheme.labelSmall?.color)),
                 ]),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text(item.timestampFormatado,
-              style: GoogleFonts.inter(
-                  fontSize: 10,
-                  color: Theme.of(context)
-                      .textTheme
-                      .labelSmall
-                      ?.color)),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Botão PDF
+              _PdfHistoricoButton(item: item),
+              const SizedBox(height: 4),
+              // Botão deletar item
+              InkWell(
+                onTap: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Excluir cálculo?'),
+                      content: Text(
+                        'Deseja excluir este cálculo do histórico?\n\n"${item.entrada}"',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.red.shade400),
+                          child: const Text('Excluir'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true && context.mounted) {
+                    context.read<AppState>().removeHistorico(item.id);
+                  }
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.delete_outline_rounded,
+                    size: 16,
+                    color: Theme.of(context).textTheme.labelSmall?.color),
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _PdfHistoricoButton extends StatefulWidget {
+  final HistoricoItem item;
+  const _PdfHistoricoButton({required this.item});
+
+  @override
+  State<_PdfHistoricoButton> createState() => _PdfHistoricoButtonState();
+}
+
+class _PdfHistoricoButtonState extends State<_PdfHistoricoButton> {
+  bool _loading = false;
+
+  Future<void> _gerar() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final state = context.read<AppState>();
+      final item  = widget.item;
+
+      // Monta seções genéricas a partir dos dados do histórico
+      await PdfService.gerarEImprimir(
+        titulo:      item.tipo,
+        subtitulo:   item.entrada,
+        modoCalculo: item.modo,
+        nome:        state.usuarioNome,
+        oab:         state.usuarioOab,
+        fotoBase64:  state.usuarioFoto,
+        secoes: [
+          PdfSecao(
+            titulo: 'Dados de entrada',
+            itens: [
+              PdfItem(label: 'CÁLCULO', valor: item.tipo, largura: 200),
+              PdfItem(label: 'ENTRADA', valor: item.entrada, largura: 350),
+            ],
+          ),
+          PdfSecao(
+            titulo: 'Resultado',
+            itens: [
+              PdfItem(label: 'RESULTADO', valor: item.saida,
+                  destaque: true, largura: 450),
+            ],
+            obs: item.timestampFormatado,
+          ),
+        ],
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: _loading ? null : _gerar,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: _loading
+            ? const SizedBox(width: 16, height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Icon(Icons.picture_as_pdf_rounded,
+                size: 16, color: Colors.red.shade400),
       ),
     );
   }

@@ -22,7 +22,7 @@ class PdfService {
   static Future<void> gerarEImprimir({
     required String titulo,
     required String subtitulo,
-    required List<_SecaoPdf> secoes,
+    required List<PdfSecao> secoes,
     required String nome,
     required String oab,
     required String fotoBase64, // data URL ou vazio
@@ -165,7 +165,7 @@ class PdfService {
   }
 
   // ── Seção ────────────────────────────────────────────────────
-  static pw.Widget _buildSecao(_SecaoPdf s) {
+  static pw.Widget _buildSecao(PdfSecao s) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -209,7 +209,7 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildItem(_ItemPdf item) {
+  static pw.Widget _buildItem(PdfItem item) {
     return pw.Container(
       width: item.largura,
       padding: const pw.EdgeInsets.all(10),
@@ -257,19 +257,19 @@ class PdfService {
 
 // ── Modelos de dados para o PDF ──────────────────────────────
 
-class _SecaoPdf {
+class PdfSecao {
   final String titulo;
-  final List<_ItemPdf> itens;
+  final List<PdfItem> itens;
   final String? obs;
-  _SecaoPdf({required this.titulo, required this.itens, this.obs});
+  PdfSecao({required this.titulo, required this.itens, this.obs});
 }
 
-class _ItemPdf {
+class PdfItem {
   final String label;
   final String valor;
   final bool destaque;
   final double largura;
-  _ItemPdf({
+  PdfItem({
     required this.label,
     required this.valor,
     this.destaque = false,
@@ -299,20 +299,20 @@ class PdfConverter {
         modoCalculo: modoCalculo,
         nome: nome, oab: oab, fotoBase64: foto,
         secoes: [
-          _SecaoPdf(
+          PdfSecao(
             titulo: 'Resultado decomposto',
             itens: [
-              _ItemPdf(label: 'ANOS',  valor: anos,  destaque: true,  largura: 150),
-              _ItemPdf(label: 'MESES', valor: meses, destaque: true,  largura: 150),
-              _ItemPdf(label: 'DIAS',  valor: dias,  destaque: true,  largura: 150),
+              PdfItem(label: 'ANOS',  valor: anos,  destaque: true,  largura: 150),
+              PdfItem(label: 'MESES', valor: meses, destaque: true,  largura: 150),
+              PdfItem(label: 'DIAS',  valor: dias,  destaque: true,  largura: 150),
             ],
           ),
-          _SecaoPdf(
+          PdfSecao(
             titulo: 'Totais',
             itens: [
-              _ItemPdf(label: 'TOTAL EM DIAS',  valor: totalDias,  largura: 150),
-              _ItemPdf(label: 'TOTAL EM MESES', valor: totalMeses, largura: 150),
-              _ItemPdf(label: 'TOTAL EM ANOS',  valor: totalAnos,  largura: 150),
+              PdfItem(label: 'TOTAL EM DIAS',  valor: totalDias,  largura: 150),
+              PdfItem(label: 'TOTAL EM MESES', valor: totalMeses, largura: 150),
+              PdfItem(label: 'TOTAL EM ANOS',  valor: totalAnos,  largura: 150),
             ],
             obs: formula,
           ),
@@ -341,21 +341,21 @@ class PdfProjecao {
         modoCalculo: modoCalculo,
         nome: nome, oab: oab, fotoBase64: foto,
         secoes: [
-          _SecaoPdf(
+          PdfSecao(
             titulo: 'Dados de entrada',
             itens: [
-              _ItemPdf(label: 'DATA DE INÍCIO', valor: dataInicio, largura: 200),
-              _ItemPdf(label: 'PENA',           valor: pena,       largura: 200),
+              PdfItem(label: 'DATA DE INÍCIO', valor: dataInicio, largura: 200),
+              PdfItem(label: 'PENA',           valor: pena,       largura: 200),
             ],
           ),
-          _SecaoPdf(
+          PdfSecao(
             titulo: 'Resultado',
             itens: [
-              _ItemPdf(label: 'DATA DE TÉRMINO', valor: dataTermino, destaque: true, largura: 200),
-              _ItemPdf(label: 'DIA DA SEMANA',   valor: diaSemana,   largura: 150),
-              _ItemPdf(label: 'TOTAL EM DIAS',   valor: totalDias,   largura: 150),
+              PdfItem(label: 'DATA DE TÉRMINO', valor: dataTermino, destaque: true, largura: 200),
+              PdfItem(label: 'DIA DA SEMANA',   valor: diaSemana,   largura: 150),
+              PdfItem(label: 'TOTAL EM DIAS',   valor: totalDias,   largura: 150),
               if (fracao.isNotEmpty)
-                _ItemPdf(label: 'FRAÇÃO ($fracao)', valor: dataFracao, largura: 200),
+                PdfItem(label: 'FRAÇÃO ($fracao)', valor: dataFracao, largura: 200),
             ],
             obs: detalhes,
           ),
@@ -384,21 +384,21 @@ class PdfEntreDatas {
         modoCalculo: modoCalculo,
         nome: nome, oab: oab, fotoBase64: foto,
         secoes: [
-          _SecaoPdf(
+          PdfSecao(
             titulo: 'Datas',
             itens: [
-              _ItemPdf(label: 'DATA INICIAL', valor: dataInicio, largura: 220),
-              _ItemPdf(label: 'DATA FINAL',   valor: dataFim,    largura: 220),
+              PdfItem(label: 'DATA INICIAL', valor: dataInicio, largura: 220),
+              PdfItem(label: 'DATA FINAL',   valor: dataFim,    largura: 220),
             ],
           ),
-          _SecaoPdf(
+          PdfSecao(
             titulo: 'Resultado',
             itens: [
-              _ItemPdf(label: 'ANOS',           valor: anos,       destaque: true, largura: 140),
-              _ItemPdf(label: 'MESES',          valor: meses,      destaque: true, largura: 140),
-              _ItemPdf(label: 'DIAS',           valor: dias,       destaque: true, largura: 140),
-              _ItemPdf(label: 'TOTAL EM DIAS',  valor: totalDias,  largura: 200),
-              _ItemPdf(label: 'TOTAL EM MESES', valor: totalMeses, largura: 200),
+              PdfItem(label: 'ANOS',           valor: anos,       destaque: true, largura: 140),
+              PdfItem(label: 'MESES',          valor: meses,      destaque: true, largura: 140),
+              PdfItem(label: 'DIAS',           valor: dias,       destaque: true, largura: 140),
+              PdfItem(label: 'TOTAL EM DIAS',  valor: totalDias,  largura: 200),
+              PdfItem(label: 'TOTAL EM MESES', valor: totalMeses, largura: 200),
             ],
             obs: detalhes,
           ),

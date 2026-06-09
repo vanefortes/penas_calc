@@ -3,13 +3,19 @@
 
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
 class GoogleAuthService {
   static final _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    clientId: kIsWeb
+        ? '148303670455-558pbf6atg8lr4c2332m016e0m3dua1e.apps.googleusercontent.com'
+        : defaultTargetPlatform == TargetPlatform.iOS
+            ? '148303670455-20g46966frr6hec2d92duesf7v03rhld.apps.googleusercontent.com'
+            : '148303670455-g07a8j6th324qeh3jop4250748aumrg8.apps.googleusercontent.com',
+    serverClientId: '148303670455-558pbf6atg8lr4c2332m016e0m3dua1e.apps.googleusercontent.com',
   );
 
   /// Faz login com Google e retorna os dados do usuário.
