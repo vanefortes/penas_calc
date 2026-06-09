@@ -22,7 +22,7 @@ class PdfService {
   static Future<void> gerarEImprimir({
     required String titulo,
     required String subtitulo,
-    required List<_SecaoPdf> secoes,
+    required List<PdfSecao> secoes,
     required String nome,
     required String oab,
     required String fotoBase64, // data URL ou vazio
@@ -165,7 +165,7 @@ class PdfService {
   }
 
   // ── Seção ────────────────────────────────────────────────────
-  static pw.Widget _buildSecao(_SecaoPdf s) {
+  static pw.Widget _buildSecao(PdfSecao s) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -209,7 +209,7 @@ class PdfService {
     );
   }
 
-  static pw.Widget _buildItem(_ItemPdf item) {
+  static pw.Widget _buildItem(PdfItem item) {
     return pw.Container(
       width: item.largura,
       padding: const pw.EdgeInsets.all(10),
@@ -259,7 +259,7 @@ class PdfService {
 
 class PdfSecao {
   final String titulo;
-  final List<_ItemPdf> itens;
+  final List<PdfItem> itens;
   final String? obs;
   PdfSecao({required this.titulo, required this.itens, this.obs});
 }
