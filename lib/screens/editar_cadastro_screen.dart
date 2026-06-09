@@ -340,7 +340,12 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                   controller: _oab,
                   icon: Icons.shield_rounded,
                   isDark: isDark,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a OAB' : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return null; // opcional
+                    final ok = RegExp(r'^\d{1,6}\s*/\s*[A-Za-z]{2}$')
+                        .hasMatch(v.trim());
+                    return ok ? null : 'Use o formato: 123456/SP';
+                  },
                 ),
                 const SizedBox(height: 12),
 

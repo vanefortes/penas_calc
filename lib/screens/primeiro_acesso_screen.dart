@@ -58,25 +58,35 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     return RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(email);
   }
 
+  bool _oabValida(String oab) {
+    if (oab.isEmpty) return true; // OAB é opcional
+    return RegExp(
+      r'^\d{1,6}\s*/\s*[A-Za-z]{2}$',
+    ).hasMatch(oab.trim());
+  }
+
   Future<void> _concluir() async {
     final nome  = _nome.text.trim();
     final email = _email.text.trim();
+    final oab   = _oab.text.trim();
 
-    // Validação — nome obrigatório
     if (nome.isEmpty) {
       _mostrarErro('O nome é obrigatório para continuar.');
       return;
     }
 
-    // Validação — e-mail obrigatório
     if (email.isEmpty) {
       _mostrarErro('O e-mail é obrigatório para continuar.');
       return;
     }
 
-    // Validação — formato do e-mail
     if (!_emailValido(email)) {
       _mostrarErro('Digite um e-mail válido. Ex: nome@dominio.com');
+      return;
+    }
+
+    if (!_oabValida(oab)) {
+      _mostrarErro('OAB inválida. Use o formato: 123456/SP');
       return;
     }
 
