@@ -54,16 +54,54 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     super.dispose();
   }
 
+  bool _emailValido(String email) {
+    return RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(email);
+  }
+
   Future<void> _concluir() async {
+    final nome  = _nome.text.trim();
+    final email = _email.text.trim();
+
+    // Validação — nome obrigatório
+    if (nome.isEmpty) {
+      _mostrarErro('O nome é obrigatório para continuar.');
+      return;
+    }
+
+    // Validação — e-mail obrigatório
+    if (email.isEmpty) {
+      _mostrarErro('O e-mail é obrigatório para continuar.');
+      return;
+    }
+
+    // Validação — formato do e-mail
+    if (!_emailValido(email)) {
+      _mostrarErro('Digite um e-mail válido. Ex: nome@dominio.com');
+      return;
+    }
+
     final state = context.read<AppState>();
     await state.completarPrimeiroAcesso(
-      nome: _nome.text.trim(),
+      nome: nome,
       oab: _oab.text.trim(),
-      email: _email.text.trim(),
+      email: email,
       biometria: _biometria,
     );
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+  }
+
+  void _mostrarErro(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.warning_rounded, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Expanded(child: Text(mensagem, style: GoogleFonts.inter(fontSize: 13))),
+      ]),
+      backgroundColor: Colors.red.shade700,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ));
   }
 
   @override
@@ -130,6 +168,10 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                       style: GoogleFonts.cormorantGaramond(
                         fontStyle: FontStyle.italic, fontSize: 14, color: _CP.textDim,
                       )),
+                    const SizedBox(height: 6),
+                    Text('* campos obrigatórios',
+                      style: GoogleFonts.inter(
+                        fontSize: 11, color: _CP.goldBright.withOpacity(0.7))),
                     const SizedBox(height: 26),
                     // Botão Google
                     SizedBox(
@@ -168,9 +210,9 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                       ),
                       Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
                     ]),
-                    _Field(label: 'Nome do(a) advogado(a)', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: false),
+                    _Field(label: 'Nome do(a) advogado(a) *', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: false),
                     _Field(label: 'OAB / UF',               placeholder: '123.456 / SP',        controller: _oab,   mono: true),
-                    _Field(label: 'E-mail (opcional)',       placeholder: 'contato@escritorio.com', controller: _email, keyboard: TextInputType.emailAddress),
+                    _Field(label: 'E-mail *',                placeholder: 'contato@escritorio.com', controller: _email, keyboard: TextInputType.emailAddress),
                     const SizedBox(height: 14),
                     _BiometriaCard(on: _biometria, onChanged: (v) => setState(() => _biometria = v)),
                   ]),
