@@ -10,6 +10,17 @@
 	<string>Usado para selecionar foto de perfil da galeria</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Usado para proteger o acesso ao aplicativo com Face ID</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.148303670455-20g46966frr6hec2d92duesf7v03rhld</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
