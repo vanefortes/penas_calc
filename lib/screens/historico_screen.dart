@@ -73,6 +73,8 @@ class HistoricoScreen extends StatelessWidget {
               child: const Text('Cancelar')),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                  foregroundColor: Colors.red.shade400),
               child: const Text('Apagar tudo')),
         ],
       ),
