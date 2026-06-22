@@ -64,6 +64,10 @@ class ConfiguracaoScreen extends StatelessWidget {
           _sectionTitle(context, 'Sobre'),
           const SizedBox(height: 10),
           _infoCard(context),
+          const SizedBox(height: 24),
+          _sectionTitle(context, 'Zona de risco'),
+          const SizedBox(height: 10),
+          _ExcluirContaTile(),
         ],
       ),
     );
@@ -542,6 +546,109 @@ class _ThemeTile extends StatelessWidget {
                     .textTheme
                     .titleMedium
                     ?.color),
+        ]),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// NOVO — Tile "Excluir conta e dados" (Zona de risco)
+// ---------------------------------------------------------------------------
+
+class _ExcluirContaTile extends StatelessWidget {
+  const _ExcluirContaTile();
+
+  Future<void> _confirmarExclusao(BuildContext context) async {
+    // Primeira confirmação.
+    final primeiraOk = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir conta e dados?'),
+        content: const Text(
+          'Isso vai apagar permanentemente seu perfil, histórico de '
+          'cálculos e preferências salvas neste dispositivo, e desconectar '
+          'sua conta Google. Essa ação não pode ser desfeita.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: Colors.red.shade400),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+    if (primeiraOk != true || !context.mounted) return;
+
+    // Segunda confirmação (ação destrutiva e irreversível).
+    final confirmadoFinal = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Tem certeza?'),
+        content: const Text(
+          'Todos os seus dados serão apagados agora. Não será possível '
+          'recuperá-los depois.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: Colors.red.shade400),
+            child: const Text('Excluir definitivamente'),
+          ),
+        ],
+      ),
+    );
+    if (confirmadoFinal != true || !context.mounted) return;
+
+    await context.read<AppState>().excluirContaEDados();
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushNamedAndRemoveUntil(
+        '/onboarding', (_) => false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _confirmarExclusao(context),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.red.shade400.withOpacity(0.4),
+            width: 0.5,
+          ),
+        ),
+        child: Row(children: [
+          Icon(Icons.delete_forever_rounded,
+              size: 18, color: Colors.red.shade400),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Excluir conta e dados',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.red.shade400,
+              ),
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded,
+              size: 18, color: Colors.red.shade400),
         ]),
       ),
     );

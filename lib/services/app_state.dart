@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/calculo.dart';
 import '../theme/app_theme.dart';
+import 'google_auth_service.dart';
 
 class AppState extends ChangeNotifier {
   ModoCalculo _modoCalculo = ModoCalculo.padrao;
@@ -169,5 +170,32 @@ class AppState extends ChangeNotifier {
         'foto_offset_x','foto_offset_y','foto_scale']) {
       await p.remove(k);
     }
+  }
+
+  /// Exclui a conta e TODOS os dados do usuário do dispositivo:
+  /// perfil, histórico de cálculos, preferências e sessão do Google.
+  /// Ação irreversível — usada na tela de Configurações ("Zona de risco").
+  Future<void> excluirContaEDados() async {
+    // Desloga da conta Google, se houver sessão ativa.
+    try {
+      await GoogleAuthService.signOut();
+    } catch (_) {}
+
+    // Limpa estado em memória.
+    _modoCalculo = ModoCalculo.padrao;
+    _themeMode   = ThemeMode.system;
+    _template    = AppTemplate.navyDourado;
+    _historico   = [];
+    _primeiroAcessoConcluido = false;
+    _usuarioNome = _usuarioOab = _usuarioEmail = '';
+    _biometriaAtiva = false;
+    _usuarioFoto = '';
+    _fotoOffsetX = _fotoOffsetY = 0.0;
+    _fotoScale = 1.0;
+    notifyListeners();
+
+    // Limpa TODAS as chaves persistidas pelo app.
+    final p = await SharedPreferences.getInstance();
+    await p.clear();
   }
 }
