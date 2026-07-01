@@ -2,10 +2,12 @@
 // Tela dedicada para edição dos dados cadastrais.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
+import '../services/apple_auth_service.dart';
 import '../widgets/avatar_perfil.dart';
 
 class EditarCadastroScreen extends StatefulWidget {
@@ -72,6 +74,12 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
   }
 
   bool _googleLoading = false;
+  bool _appleLoading = false;
+
+  bool get _appleDisponivel =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 
   Future<void> _loginGoogle() async {
     setState(() => _googleLoading = true);
@@ -103,6 +111,32 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
         const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
         const SizedBox(width: 8),
         Text('Dados importados do Google!',
+          style: GoogleFonts.inter(fontSize: 13)),
+      ]),
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ));
+  }
+
+  Future<void> _loginApple() async {
+    setState(() => _appleLoading = true);
+    final user = await AppleAuthService.signIn();
+    if (!mounted) return;
+    setState(() => _appleLoading = false);
+
+    if (user == null) return;
+
+    setState(() {
+      if (user.nome.isNotEmpty) _nome.text = user.nome;
+      if (user.email.isNotEmpty) _email.text = user.email;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Row(children: [
+        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+        const SizedBox(width: 8),
+        Text('Dados importados da Apple!',
           style: GoogleFonts.inter(fontSize: 13)),
       ]),
       duration: const Duration(seconds: 2),
@@ -282,6 +316,29 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                     ),
                   ),
                 ),
+                if (_appleDisponivel) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _appleLoading ? null : _loginApple,
+                      icon: _appleLoading
+                          ? const SizedBox(width: 16, height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.apple_rounded, size: 18),
+                      label: Text(
+                        _appleLoading
+                            ? 'Conectando...'
+                            : 'Importar dados da Apple',
+                        style: GoogleFonts.inter(fontSize: 13),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: primary.withOpacity(0.4)),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
 
                 // Avatar editável centralizado
