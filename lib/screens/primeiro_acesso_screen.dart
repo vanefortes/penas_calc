@@ -1,10 +1,12 @@
 // lib/screens/primeiro_acesso_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
+import '../services/apple_auth_service.dart';
 
 // Paleta local — independente do tema global
 class _CP {
@@ -32,6 +34,13 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   final _email = TextEditingController();
   bool _biometria = true;
   bool _googleLoading = false;
+  bool _appleLoading = false;
+
+  // Sign in with Apple só faz sentido em plataformas Apple.
+  bool get _appleDisponivel =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 
   Future<void> _loginGoogle() async {
     setState(() => _googleLoading = true);
@@ -46,6 +55,18 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     if (user.foto.isNotEmpty) {
       await context.read<AppState>().setFotoPerfil(user.foto);
     }
+  }
+
+  Future<void> _loginApple() async {
+    setState(() => _appleLoading = true);
+    final user = await AppleAuthService.signIn();
+    if (!mounted) return;
+    setState(() => _appleLoading = false);
+    if (user == null) return;
+    setState(() {
+      if (user.nome.isNotEmpty) _nome.text = user.nome;
+      if (user.email.isNotEmpty) _email.text = user.email;
+    });
   }
 
   @override
@@ -210,6 +231,34 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         ),
                       ),
                     ),
+                    if (_appleDisponivel) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _appleLoading ? null : _loginApple,
+                          icon: _appleLoading
+                              ? const SizedBox(width: 16, height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: _CP.goldBright))
+                              : const Icon(Icons.apple_rounded,
+                                  size: 20, color: _CP.goldBright),
+                          label: Text(
+                            _appleLoading
+                                ? 'Conectando...'
+                                : 'Preencher com conta Apple',
+                            style: GoogleFonts.inter(
+                              fontSize: 13, color: _CP.cream),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            side: const BorderSide(color: _CP.goldDeep, width: 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(11)),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(children: [
                       Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
