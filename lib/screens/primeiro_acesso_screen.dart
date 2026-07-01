@@ -150,6 +150,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                     Container(
                       width: 110, height: 110,
                       decoration: BoxDecoration(
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: const [
                           BoxShadow(color: Colors.black54, blurRadius: 22, offset: Offset(0, 8)),
