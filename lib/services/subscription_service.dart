@@ -39,6 +39,15 @@ class SubscriptionService {
   /// Inicializa o SDK. Chame uma vez, no início do app (main.dart).
   Future<void> init() async {
     if (_configured) return;
+
+    // Web (e qualquer plataforma que não seja iOS/Android) não tem loja de
+    // apps nem implementação nativa do plugin — precisa sair ANTES de
+    // chamar qualquer método do Purchases, senão ele lança
+    // MissingPluginException e quebra a inicialização do app inteiro.
+    if (kIsWeb || (!Platform.isIOS && !Platform.isAndroid)) {
+      return;
+    }
+
     await Purchases.setLogLevel(
       kDebugMode ? LogLevel.debug : LogLevel.error,
     );
@@ -46,12 +55,8 @@ class SubscriptionService {
     final String apiKey;
     if (Platform.isIOS) {
       apiKey = _revenueCatApiKeyIOS;
-    } else if (Platform.isAndroid) {
-      apiKey = _revenueCatApiKeyAndroid;
     } else {
-      // Outras plataformas (web, desktop) não têm loja de apps — não
-      // inicializa o SDK, e isPremium() simplesmente retornará false.
-      return;
+      apiKey = _revenueCatApiKeyAndroid;
     }
 
     await Purchases.configure(PurchasesConfiguration(apiKey));
@@ -95,7 +100,7 @@ class SubscriptionService {
   Future<PurchaseResult> purchase(Package package) async {
     try {
       final result = await Purchases.purchasePackage(package);
-      final ativo = result.customerInfo.entitlements.active
+      final ativo = result.entitlements.active
           .containsKey(kEntitlementPremium);
       return PurchaseResult(sucesso: ativo);
     } on PlatformException catch (e) {
