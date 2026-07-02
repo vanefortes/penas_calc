@@ -7,6 +7,7 @@ import '../services/app_state.dart';
 import '../services/pdf_service.dart';
 import '../widgets/common_widgets.dart';
 import '../theme/app_theme.dart';
+import 'paywall_screen.dart';
 
 class EntreDatasScreen extends StatefulWidget {
   const EntreDatasScreen({super.key});
@@ -58,6 +59,14 @@ class _EntreDatasScreenState extends State<EntreDatasScreen> {
   }
 
   void _calcular() {
+    final appState = context.read<AppState>();
+    if (!appState.podeCalcular) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PaywallScreen(dispensavel: true)),
+      );
+      return;
+    }
+
     setState(() => _erro = null);
     if (_dataInicio == null || _dataFim == null) {
       setState(() => _erro = 'Informe as duas datas.');
@@ -83,6 +92,7 @@ class _EntreDatasScreenState extends State<EntreDatasScreen> {
           modo: 'Calendário real',
           progressao: _progressao,
         ));
+    appState.registrarCalculoGratis();
   }
 
   void _limpar() {
@@ -320,15 +330,21 @@ class _EntreDatasScreenState extends State<EntreDatasScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(children: [
-                Text('Período calculado',
-                    style:
-                        Theme.of(context).textTheme.titleMedium),
-                if (_progressao) ...[
-                  const SizedBox(width: 8),
-                  const ProgressaoBadge(),
-                ],
-              ]),
+              Expanded(
+                child: Row(children: [
+                  Flexible(
+                    child: Text('Período calculado',
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            Theme.of(context).textTheme.titleMedium),
+                  ),
+                  if (_progressao) ...[
+                    const SizedBox(width: 8),
+                    const ProgressaoBadge(),
+                  ],
+                ]),
+              ),
+              const SizedBox(width: 8),
               CopyButton(textToCopy: _textoParaCopiar()),
               const SizedBox(width: 8),
               PdfButton(onTap: _gerarPdf),

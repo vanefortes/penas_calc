@@ -7,6 +7,7 @@ import '../services/app_state.dart';
 import '../services/pdf_service.dart';
 import '../widgets/common_widgets.dart';
 import '../theme/app_theme.dart';
+import 'paywall_screen.dart';
 
 class ProjecaoScreen extends StatefulWidget {
   const ProjecaoScreen({super.key});
@@ -69,6 +70,14 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
   }
 
   void _calcular() {
+    final appState = context.read<AppState>();
+    if (!appState.podeCalcular) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PaywallScreen(dispensavel: true)),
+      );
+      return;
+    }
+
     setState(() => _erro = null);
     if (_dataInicio == null) {
       setState(() => _erro = 'Informe a data inicial.');
@@ -111,6 +120,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
           modo: modo.nome,
           progressao: _progressao,
         ));
+    appState.registrarCalculoGratis();
   }
 
   void _limpar() {
@@ -374,8 +384,12 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Projeção calculada',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Flexible(
+                child: Text('Projeção calculada',
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const SizedBox(width: 8),
               CopyButton(textToCopy: _textoParaCopiar()),
               const SizedBox(width: 8),
               PdfButton(onTap: _gerarPdf),
@@ -401,13 +415,16 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
                       size: 14,
                       color: AppTheme.accentColor(context)),
                   const SizedBox(width: 6),
-                  Text(
-                    'DATA DE TÉRMINO',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.7,
-                      color: AppTheme.accentColor(context),
+                  Flexible(
+                    child: Text(
+                      'DATA DE TÉRMINO',
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.7,
+                        color: AppTheme.accentColor(context),
+                      ),
                     ),
                   ),
                   if (_progressao) ...[

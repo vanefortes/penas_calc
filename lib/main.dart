@@ -18,7 +18,6 @@ import 'screens/dados_cadastrais_screen.dart';
 import 'screens/editar_cadastro_screen.dart';
 import 'screens/editor_foto_screen.dart';
 import 'screens/lock_screen.dart';
-import 'screens/paywall_screen.dart';
 import 'services/subscription_service.dart';
 import 'services/google_auth_service.dart';
 
@@ -102,10 +101,6 @@ class AppEntry extends StatelessWidget {
           child: CircularProgressIndicator(color: Color(0xFFC9A961)),
         ),
       );
-    }
-
-    if (!state.isPremium) {
-      return const PaywallScreen(dispensavel: false);
     }
 
     if (state.biometriaAtiva) {
