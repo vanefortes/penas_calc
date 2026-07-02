@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
+import '../widgets/google_signin_button/google_signin_button.dart';
 
 // Paleta local — independente do tema global
 class _CP {
@@ -47,13 +48,19 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     final user = await GoogleAuthService.signIn();
     if (!mounted) return;
     setState(() => _googleLoading = false);
+    _onGoogleResult(user);
+  }
+
+  /// Chamado tanto pelo fluxo mobile (após `_loginGoogle`) quanto pelo
+  /// botão oficial do Google na Web (via stream de eventos de login).
+  void _onGoogleResult(GoogleUserData? user) {
     if (user == null) return;
     setState(() {
       _nome.text  = user.nome;
       _email.text = user.email;
     });
     if (user.foto.isNotEmpty) {
-      await context.read<AppState>().setFotoPerfil(user.foto);
+      context.read<AppState>().setFotoPerfil(user.foto);
     }
   }
 
@@ -206,6 +213,9 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         fontSize: 11, color: _CP.goldBright.withOpacity(0.7))),
                     const SizedBox(height: 26),
                     // Botão Google
+                    if (kIsWeb)
+                      GoogleSignInButton(onSignedIn: _onGoogleResult)
+                    else
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(

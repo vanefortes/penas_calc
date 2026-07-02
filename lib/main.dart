@@ -20,6 +20,7 @@ import 'screens/editor_foto_screen.dart';
 import 'screens/lock_screen.dart';
 import 'screens/paywall_screen.dart';
 import 'services/subscription_service.dart';
+import 'services/google_auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +28,7 @@ void main() async {
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
   await SubscriptionService.instance.init();
+  await GoogleAuthService.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
@@ -308,7 +310,7 @@ class _Rodape extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'V Forttes Software Engineer',
+            'VForttes Software Engineering',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 11,
