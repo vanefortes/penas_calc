@@ -5,11 +5,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/calculo.dart';
 import '../theme/app_theme.dart';
 import 'google_auth_service.dart';
+import 'subscription_service.dart';
 
 class AppState extends ChangeNotifier {
   ModoCalculo _modoCalculo = ModoCalculo.padrao;
   ThemeMode   _themeMode   = ThemeMode.system;
   AppTemplate _template    = AppTemplate.navyDourado;
+
+  // ── Assinatura (RevenueCat) ─────────────────────────────────
+  bool _isPremium = false;
+  bool _assinaturaVerificada = false;
+  bool get isPremium => _isPremium;
+  bool get assinaturaVerificada => _assinaturaVerificada;
+
+  /// Reconsulta o status de assinatura junto ao RevenueCat.
+  /// Chame após uma compra, restauração, ou ao reabrir o app.
+  Future<void> atualizarStatusAssinatura() async {
+    final premium = await SubscriptionService.instance.isPremium();
+    _isPremium = premium;
+    _assinaturaVerificada = true;
+    notifyListeners();
+  }
   List<HistoricoItem> _historico = [];
 
   bool   _primeiroAcessoConcluido = false;
@@ -68,6 +84,9 @@ class AppState extends ChangeNotifier {
 
     _carregado = true;
     notifyListeners();
+
+    // Consulta o status de assinatura em paralelo, sem travar a UI.
+    atualizarStatusAssinatura();
   }
 
   Future<void> setModoCalculo(ModoCalculo v) async {

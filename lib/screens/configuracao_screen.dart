@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/app_state.dart';
+import '../services/subscription_service.dart';
 import '../models/calculo.dart';
 import '../theme/app_theme.dart';
 import '../widgets/avatar_perfil.dart';
+import 'paywall_screen.dart';
 
 class ConfiguracaoScreen extends StatelessWidget {
   const ConfiguracaoScreen({super.key});
@@ -25,6 +28,11 @@ class ConfiguracaoScreen extends StatelessWidget {
             oab: state.usuarioOab,
             onTap: () => Navigator.of(context).pushNamed('/dados-cadastrais'),
           ),
+          const SizedBox(height: 24),
+
+          _sectionTitle(context, 'Assinatura'),
+          const SizedBox(height: 10),
+          const _AssinaturaTile(),
           const SizedBox(height: 24),
 
           _sectionTitle(context, 'Template visual'),
@@ -650,6 +658,113 @@ class _ExcluirContaTile extends StatelessWidget {
           Icon(Icons.chevron_right_rounded,
               size: 18, color: Colors.red.shade400),
         ]),
+      ),
+    );
+  }
+}
+
+/// Card de status da assinatura, com atalho para gerenciar (App Store)
+/// ou assinar, caso o usuário tenha chegado até aqui sem assinatura ativa
+/// (por exemplo, restaurou um trial expirado).
+class _AssinaturaTile extends StatefulWidget {
+  const _AssinaturaTile();
+
+  @override
+  State<_AssinaturaTile> createState() => _AssinaturaTileState();
+}
+
+class _AssinaturaTileState extends State<_AssinaturaTile> {
+  bool _restaurando = false;
+
+  Future<void> _abrirGerenciamento() async {
+    // URL padrão da Apple para a tela de gerenciamento de assinaturas.
+    final uri = Uri.parse('https://apps.apple.com/account/subscriptions');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _restaurar() async {
+    setState(() => _restaurando = true);
+    final ok = await SubscriptionService.instance.restaurar();
+    if (!mounted) return;
+    setState(() => _restaurando = false);
+    if (ok) {
+      await context.read<AppState>().atualizarStatusAssinatura();
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ok
+          ? 'Assinatura restaurada com sucesso!'
+          : 'Nenhuma assinatura ativa encontrada.'),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Theme.of(context).dividerTheme.color ?? primary.withOpacity(0.15),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                state.isPremium ? Icons.verified_rounded : Icons.lock_outline_rounded,
+                size: 20,
+                color: state.isPremium ? primary : Colors.grey,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  state.isPremium ? 'Assinatura Premium ativa' : 'Sem assinatura ativa',
+                  style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (state.isPremium)
+            OutlinedButton(
+              onPressed: _abrirGerenciamento,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 44),
+                side: BorderSide(color: primary.withOpacity(0.4)),
+              ),
+              child: Text('Gerenciar assinatura', style: GoogleFonts.inter(fontSize: 13.5)),
+            )
+          else
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PaywallScreen(dispensavel: true)),
+              ),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 44),
+                backgroundColor: primary,
+              ),
+              child: Text('Assinar agora', style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600)),
+            ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: _restaurando ? null : _restaurar,
+              child: _restaurando
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text('Restaurar compra', style: GoogleFonts.inter(fontSize: 12.5)),
+            ),
+          ),
+        ],
       ),
     );
   }
