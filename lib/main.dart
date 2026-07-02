@@ -18,12 +18,15 @@ import 'screens/dados_cadastrais_screen.dart';
 import 'screens/editar_cadastro_screen.dart';
 import 'screens/editor_foto_screen.dart';
 import 'screens/lock_screen.dart';
+import 'screens/paywall_screen.dart';
+import 'services/subscription_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
+  await SubscriptionService.instance.init();
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
@@ -87,6 +90,21 @@ class AppEntry extends StatelessWidget {
     }
 
     if (!state.primeiroAcessoConcluido) return const OnboardingScreen();
+
+    // Aguarda a primeira consulta de status de assinatura antes de decidir
+    // se mostra o paywall, para não "piscar" a tela de bloqueio à toa.
+    if (!state.assinaturaVerificada) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF050A18),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFC9A961)),
+        ),
+      );
+    }
+
+    if (!state.isPremium) {
+      return const PaywallScreen(dispensavel: false);
+    }
 
     if (state.biometriaAtiva) {
       return LockScreen(child: const MainShell());
