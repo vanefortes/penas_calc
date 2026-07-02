@@ -22,9 +22,19 @@ class GoogleAuthService {
   /// Retorna null se o usuário cancelar.
   static Future<GoogleUserData?> signIn() async {
     try {
-      // Tenta login silencioso primeiro (já logado antes)
-      GoogleSignInAccount? account = await _googleSignIn.signInSilently();
-      account ??= await _googleSignIn.signIn();
+      GoogleSignInAccount? account;
+
+      // Na Web, qualquer `await` antes do signIn() quebra o vínculo com o
+      // clique do usuário, e o navegador bloqueia o popup silenciosamente
+      // (sem lançar erro nenhum — só "não acontece nada"). Por isso, na Web
+      // pulamos direto para o signIn() manual, sem tentar login silencioso.
+      if (kIsWeb) {
+        account = await _googleSignIn.signIn();
+      } else {
+        // Tenta login silencioso primeiro (já logado antes)
+        account = await _googleSignIn.signInSilently();
+        account ??= await _googleSignIn.signIn();
+      }
       if (account == null) return null;
 
       // Baixa a foto de perfil como data URL base64
