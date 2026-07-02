@@ -373,7 +373,7 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) => Column(children: [
     Text('© Copyright 2026', style: GoogleFonts.cormorantGaramond(fontSize: 12, color: CpColors.textFaint)),
     const SizedBox(height: 4),
-    Text('V FORTTES SOFTWARE ENGINEER', style: GoogleFonts.cinzel(
+    Text('VFORTTES SOFTWARE ENGINEERING', style: GoogleFonts.cinzel(
       fontWeight: FontWeight.w500, fontSize: 11, color: CpColors.textDim, letterSpacing: 11 * 0.22)),
   ]);
 }
