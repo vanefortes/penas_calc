@@ -7,6 +7,7 @@ import '../services/app_state.dart';
 import '../services/pdf_service.dart';
 import '../widgets/common_widgets.dart';
 import '../theme/app_theme.dart';
+import 'paywall_screen.dart';
 
 enum InputMode { amd, totalDias, totalMeses }
 
@@ -64,6 +65,14 @@ class _ConverterScreenState extends State<ConverterScreen> {
   }
 
   void _calcular() {
+    final appState = context.read<AppState>();
+    if (!appState.podeCalcular) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PaywallScreen(dispensavel: true)),
+      );
+      return;
+    }
+
     setState(() => _erro = null);
     final modo = context.read<AppState>().modoCalculo;
     final dpm = modo.diasPorMes;
@@ -141,6 +150,7 @@ class _ConverterScreenState extends State<ConverterScreen> {
               '${anosInt}a ${mesesInt}m ${diasInt}d (${_fmt(totalDias)} dias)',
           modo: modo.nome,
         ));
+    appState.registrarCalculoGratis();
   }
 
   Future<void> _gerarPdf() async {
@@ -361,8 +371,12 @@ class _ConverterScreenState extends State<ConverterScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Resultados',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Flexible(
+                child: Text('Resultados',
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const SizedBox(width: 8),
               CopyButton(textToCopy: _textoParaCopiar()),
               const SizedBox(width: 8),
               PdfButton(onTap: _gerarPdf),

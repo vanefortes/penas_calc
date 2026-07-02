@@ -7,6 +7,10 @@ import '../theme/app_theme.dart';
 import 'google_auth_service.dart';
 import 'subscription_service.dart';
 
+/// Quantos cálculos um usuário sem assinatura pode fazer gratuitamente,
+/// antes do paywall passar a bloquear novos cálculos.
+const int kLimiteCalculosGratis = 3;
+
 class AppState extends ChangeNotifier {
   ModoCalculo _modoCalculo = ModoCalculo.padrao;
   ThemeMode   _themeMode   = ThemeMode.system;
@@ -26,6 +30,31 @@ class AppState extends ChangeNotifier {
     _assinaturaVerificada = true;
     notifyListeners();
   }
+
+  // ── Cálculos gratuitos (usuário sem assinatura) ─────────────
+  // Contador PRÓPRIO, separado do histórico — não pode ser "resetado"
+  // apagando itens do histórico, porque só aumenta, nunca diminui.
+  int _calculosGratisUsados = 0;
+  int get calculosGratisUsados => _calculosGratisUsados;
+  int get calculosGratisRestantes =>
+      (kLimiteCalculosGratis - _calculosGratisUsados).clamp(0, kLimiteCalculosGratis);
+
+  /// True se o usuário pode fazer mais um cálculo agora (é assinante,
+  /// ou ainda não bateu o limite gratuito).
+  bool get podeCalcular => _isPremium || _calculosGratisUsados < kLimiteCalculosGratis;
+
+  /// Chame depois de um cálculo bem-sucedido (só tem efeito relevante
+  /// para quem não é assinante — para assinantes o contador é ignorado
+  /// pela checagem de [podeCalcular], mas seguimos incrementando por
+  /// simplicidade/consistência).
+  Future<void> registrarCalculoGratis() async {
+    if (_isPremium) return;
+    _calculosGratisUsados++;
+    notifyListeners();
+    (await SharedPreferences.getInstance())
+        .setInt('calculos_gratis_usados', _calculosGratisUsados);
+  }
+
   List<HistoricoItem> _historico = [];
 
   bool   _primeiroAcessoConcluido = false;
@@ -71,6 +100,7 @@ class AppState extends ChangeNotifier {
       try { return HistoricoItem.fromJson(json.decode(s)); }
       catch (_) { return null; }
     }).whereType<HistoricoItem>().toList();
+    _calculosGratisUsados = p.getInt('calculos_gratis_usados') ?? 0;
 
     _primeiroAcessoConcluido = p.getBool('primeiro_acesso_ok') ?? false;
     _usuarioNome    = p.getString('usuario_nome')  ?? '';

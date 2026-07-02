@@ -86,7 +86,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(28, 24, 28, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
