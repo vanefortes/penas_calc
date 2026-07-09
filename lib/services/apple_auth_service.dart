@@ -65,10 +65,16 @@ class AppleAuthService {
         email: email,
         appleId: appleId,
       );
-    } on SignInWithAppleAuthorizationException {
-      // Usuário cancelou o fluxo — não é um erro a ser exibido.
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Usuário cancelou o fluxo (code == userCancelled) — não é um erro a
+      // ser exibido. Qualquer outro código aqui é um erro real (ex.: 1000 =
+      // capability/provisioning mal configurada no Developer Portal).
+      // ignore: avoid_print
+      print('SignInWithApple falhou: code=${e.code} message=${e.message}');
       return null;
     } catch (e) {
+      // ignore: avoid_print
+      print('SignInWithApple erro inesperado: $e');
       return null;
     }
   }

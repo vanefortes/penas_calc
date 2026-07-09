@@ -23,12 +23,12 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 const String kEntitlementPremium = 'Calculadora Penal Pro';
 
 /// API Key pública do RevenueCat para iOS.
-const String _revenueCatApiKeyIOS = 'test_BdVCehQRORqmwWFyFtOnmSVThwG';
+const String _revenueCatApiKeyIOS = 'appl_MrEXJipELQsyFqXAJVOozHxkeiI';
 
 /// API Key pública do RevenueCat para Android.
 /// Troque pela chave gerada quando você configurar o app Google Play
 /// dentro do mesmo projeto do RevenueCat (Apps → New app → Google Play).
-const String _revenueCatApiKeyAndroid = 'goog_SUBSTITUA_PELA_SUA_CHAVE_ANDROID';
+const String _revenueCatApiKeyAndroid = 'goog_nMhDOECpdlhXPIKzEAJYungpcvm';
 
 class SubscriptionService {
   SubscriptionService._();
