@@ -9,7 +9,7 @@ import 'subscription_service.dart';
 
 /// Quantos cálculos um usuário sem assinatura pode fazer gratuitamente,
 /// antes do paywall passar a bloquear novos cálculos.
-const int kLimiteCalculosGratis = 3;
+const int kLimiteCalculosGratis = 10;
 
 class AppState extends ChangeNotifier {
   ModoCalculo _modoCalculo = ModoCalculo.padrao;
