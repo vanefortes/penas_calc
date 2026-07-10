@@ -370,12 +370,15 @@ class _LoadingBar extends StatelessWidget {
 class _Footer extends StatelessWidget {
   const _Footer();
   @override
-  Widget build(BuildContext context) => Column(children: [
-    Text('© Copyright 2026', style: GoogleFonts.cormorantGaramond(fontSize: 12, color: CpColors.textFaint)),
-    const SizedBox(height: 4),
-    Text('VFORTTES SOFTWARE ENGINEERING', style: GoogleFonts.cinzel(
-      fontWeight: FontWeight.w500, fontSize: 11, color: CpColors.textDim, letterSpacing: 11 * 0.22)),
-  ]);
+  Widget build(BuildContext context) {
+    final ano = DateTime.now().year;
+    return Column(children: [
+      Text('Copyright © $ano V Fortttes Inc.', style: GoogleFonts.cormorantGaramond(fontSize: 12, color: CpColors.textFaint)),
+      const SizedBox(height: 4),
+      Text('Todos os direitos reservados', style: GoogleFonts.cinzel(
+          fontWeight: FontWeight.w500, fontSize: 11, color: CpColors.textDim, letterSpacing: 11 * 0.22)),
+    ]);
+  }
 }
 
 class _CornerOrnaments extends StatelessWidget {

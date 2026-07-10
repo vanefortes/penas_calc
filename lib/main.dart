@@ -305,7 +305,7 @@ class _Rodape extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'VForttes Software Engineering',
+            'Copyright © $ano V Fortttes Inc.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 11,
@@ -314,10 +314,10 @@ class _Rodape extends StatelessWidget {
             ),
           ),
           Text(
-            '© Copyright $ano',
+            'Todos os direitos reservados',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: 10,
               color: fg?.withOpacity(0.7),
             ),
           ),

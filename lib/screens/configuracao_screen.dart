@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../services/app_state.dart';
 import '../services/subscription_service.dart';
 import '../models/calculo.dart';
@@ -127,8 +128,16 @@ class ConfiguracaoScreen extends StatelessWidget {
                     Theme.of(context).textTheme.titleMedium),
           ]),
           const SizedBox(height: 6),
-          Text('Versão 1.0.0 • Uso criminalístico',
-              style: Theme.of(context).textTheme.bodySmall),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              final versaoTexto = snapshot.hasData
+                  ? '${snapshot.data!.version} (${snapshot.data!.buildNumber})'
+                  : '...';
+              return Text('Versão $versaoTexto • Uso criminalístico',
+                  style: Theme.of(context).textTheme.bodySmall);
+            },
+          ),
           const Divider(height: 24),
           Text(
             'Modos disponíveis:\n'
