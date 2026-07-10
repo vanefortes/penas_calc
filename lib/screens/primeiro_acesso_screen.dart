@@ -8,6 +8,7 @@ import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
+import '../utils/oab_formatter.dart';
 
 // Paleta local — independente do tema global
 class _CP {
@@ -89,7 +90,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   bool _oabValida(String oab) {
     if (oab.isEmpty) return true; // OAB é opcional
     return RegExp(
-      r'^\d{1,6}\s*/\s*[A-Za-z]{2}$',
+      r'^\d{1,3}(\.\d{1,3})?/[A-Za-z]{2}$',
     ).hasMatch(oab.trim());
   }
 
@@ -114,7 +115,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     }
 
     if (!_oabValida(oab)) {
-      _mostrarErro('OAB inválida. Use o formato: 123456/SP');
+      _mostrarErro('OAB inválida. Use o formato: 123.456/PR');
       return;
     }
 
@@ -282,7 +283,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                     ]),
                     _Field(label: 'Nome do(a) advogado(a) *', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: false),
                     _Field(label: 'E-mail *',                keyboard: TextInputType.emailAddress, placeholder: 'contato@escritorio.com', controller: _email),
-                    _Field(label: 'OAB / UF',               placeholder: '123.456/SP',        controller: _oab,   mono: true),
+                    _Field(label: 'OAB / UF',               placeholder: '123.456/PR',        controller: _oab,   mono: true, inputFormatters: [OabInputFormatter()]),
                     const SizedBox(height: 14),
                     _BiometriaCard(on: _biometria, onChanged: (v) => setState(() => _biometria = v)),
                   ]),
@@ -317,6 +318,7 @@ class _Field extends StatelessWidget {
   final TextEditingController controller;
   final bool mono, autofocus;
   final TextInputType? keyboard;
+  final List<TextInputFormatter>? inputFormatters;
 
   const _Field({
     required this.label,
@@ -325,6 +327,7 @@ class _Field extends StatelessWidget {
     this.mono = false,
     this.autofocus = false,
     this.keyboard,
+    this.inputFormatters,
   });
 
   @override
@@ -378,6 +381,7 @@ class _Field extends StatelessWidget {
             controller: controller,
             autofocus: autofocus,
             keyboardType: keyboard,
+            inputFormatters: inputFormatters,
             cursorColor: _CP.goldBright,
             style: textStyle,
             decoration: InputDecoration(

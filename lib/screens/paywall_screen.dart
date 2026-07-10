@@ -1,5 +1,6 @@
 // lib/screens/paywall_screen.dart
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -180,7 +181,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
               const SizedBox(height: 6),
               Text(
-                'A assinatura é renovada automaticamente ao fim de cada período, salvo cancelamento pelo App Store, em Ajustes → [seu nome] → Assinaturas. Ao assinar, você concorda com os Termos de Uso e a Política de Privacidade.',
+                'A assinatura é renovada automaticamente ao fim de cada período, salvo cancelamento pela ${Platform.isAndroid ? 'Google Play Store, em Perfil → Pagamentos e assinaturas → Assinaturas' : 'App Store, em Ajustes → [seu nome] → Assinaturas'}. Ao assinar, você concorda com os Termos de Uso e a Política de Privacidade.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(fontSize: 10.5, color: cs.onSurface.withOpacity(0.45), height: 1.5),
               ),
