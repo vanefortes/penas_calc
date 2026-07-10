@@ -77,6 +77,10 @@ export default async function handler(req, res) {
     res.status(200).json({
       premium,
       expiresDate: entitlement?.expires_date ?? null,
+      // Link do Customer Portal da RevenueCat (funciona pra assinaturas
+      // via RevenueCat Billing/Stripe). Pode vir null se o usuário nunca
+      // comprou, ou se a assinatura for de uma loja que não gera esse link.
+      managementUrl: data?.subscriber?.management_url ?? null,
     });
   } catch (erro) {
     console.error('Erro inesperado ao checar assinatura:', erro);

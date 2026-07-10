@@ -115,6 +115,12 @@ class AppState extends ChangeNotifier {
     _carregado = true;
     notifyListeners();
 
+    // Vincula o RevenueCat/checkout web ao e-mail do usuário (se já
+    // conhecido) antes de checar o status de assinatura.
+    if (_usuarioEmail.isNotEmpty) {
+      await SubscriptionService.instance.identify(_usuarioEmail);
+    }
+
     // Consulta o status de assinatura em paralelo, sem travar a UI.
     atualizarStatusAssinatura();
   }
@@ -174,6 +180,11 @@ class AppState extends ChangeNotifier {
     await p.setString('usuario_oab',   oab);
     await p.setString('usuario_email', email);
     await p.setBool('biometria_ativa', biometria);
+
+    if (email.isNotEmpty) {
+      await SubscriptionService.instance.identify(email);
+      await atualizarStatusAssinatura();
+    }
   }
 
   Future<void> setFotoPerfil(String dataUrl) async {

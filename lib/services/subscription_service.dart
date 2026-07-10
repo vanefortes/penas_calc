@@ -10,17 +10,31 @@
 // Essa chave é pública por design (fica embutida no app), não é segredo.
 
 import 'dart:io' show Platform;
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show PlatformException;
+import 'package:http/http.dart' as http;
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// ID do entitlement configurado no painel do RevenueCat.
 /// Precisa ser IDÊNTICO ao "Entitlement name" cadastrado lá (inclusive
 /// maiúsculas/minúsculas e espaços) — são strings comparadas literalmente.
-/// Esse entitlement é compartilhado entre iOS e Android: quem assina em
+/// Esse entitlement é compartilhado entre iOS, Android e Web: quem assina em
 /// uma plataforma e troca de aparelho continua reconhecido como assinante,
 /// desde que esteja logado com o mesmo app_user_id (ver função `identify`).
 const String kEntitlementPremium = 'Calculadora Penal Pro';
+
+/// Endpoint (Vercel) que verifica a assinatura via API REST da RevenueCat,
+/// usado apenas na Web (mobile consulta direto pelo SDK nativo).
+const String kCheckSubscriptionUrl =
+    'https://penas-calc.vercel.app/api/check-subscription';
+
+/// Chave PÚBLICA (sandbox) do checkout Web (RevenueCat Billing).
+/// Pegue em: RevenueCat → API keys → SDK API keys → linha
+/// "Calculadora Penal (RevenueCat Billing)" → Show key.
+/// Troque pela chave de PRODUÇÃO quando for lançar de verdade — a sandbox
+/// só processa pagamentos de teste do Stripe.
+const String kWebBillingApiKey = 'rcb_sb_jamCGpCEjTQGXOvZitgTIFtiY';
 
 /// API Key pública do RevenueCat para iOS.
 const String _revenueCatApiKeyIOS = 'appl_MrEXJipELQsyFqXAJVOozHxkeiI';
@@ -35,6 +49,14 @@ class SubscriptionService {
   static final SubscriptionService instance = SubscriptionService._();
 
   bool _configured = false;
+
+  /// ID estável do usuário (hoje, o e-mail). Guardado aqui porque na Web
+  /// não existe SDK nativo — usamos esse valor pra consultar o endpoint
+  /// de assinatura na Vercel.
+  String? _currentAppUserId;
+
+  /// Exposto para a tela de checkout web usar o mesmo appUserId.
+  String? get currentAppUserId => _currentAppUserId;
 
   /// Inicializa o SDK. Chame uma vez, no início do app (main.dart).
   Future<void> init() async {
@@ -63,11 +85,18 @@ class SubscriptionService {
     _configured = true;
   }
 
-  /// Vincula o RevenueCat a um identificador de usuário estável (opcional).
-  /// Útil se você quiser amarrar a assinatura ao e-mail/ID do perfil local,
-  /// para o caso do usuário trocar de aparelho.
+  /// Vincula o RevenueCat a um identificador de usuário estável — hoje,
+  /// o e-mail cadastrado no app. Chame sempre que o e-mail do usuário for
+  /// conhecido/carregado (login, primeiro acesso, restauração de sessão).
+  /// Isso é o que permite reconhecer a mesma assinatura em iOS, Android e Web.
   Future<void> identify(String appUserId) async {
     if (appUserId.isEmpty) return;
+    _currentAppUserId = appUserId;
+
+    // Na Web não existe SDK nativo — o vínculo é feito só guardando o ID
+    // acima, usado depois pelo isPremium() e pelo checkout web.
+    if (kIsWeb || (!Platform.isIOS && !Platform.isAndroid)) return;
+
     try {
       await Purchases.logIn(appUserId);
     } catch (_) {
@@ -77,11 +106,50 @@ class SubscriptionService {
 
   /// Retorna true se o usuário tem o entitlement "premium" ativo.
   Future<bool> isPremium() async {
+    if (kIsWeb) return _isPremiumWeb();
+
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey(kEntitlementPremium);
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Checagem de assinatura na Web, via endpoint próprio (Vercel), já que
+  /// o SDK do RevenueCat não roda nativamente nessa plataforma.
+  Future<bool> _isPremiumWeb() async {
+    final appUserId = _currentAppUserId;
+    if (appUserId == null || appUserId.isEmpty) return false;
+
+    try {
+      final uri = Uri.parse(kCheckSubscriptionUrl)
+          .replace(queryParameters: {'appUserId': appUserId});
+      final response = await http.get(uri);
+      if (response.statusCode != 200) return false;
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      return data['premium'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Busca o link do Customer Portal da RevenueCat (onde o usuário troca
+  /// cartão, vê fatura, cancela, etc.) pra assinaturas feitas na Web.
+  /// Retorna null se não houver assinatura ou o link não estiver disponível.
+  Future<String?> getManagementUrlWeb() async {
+    final appUserId = _currentAppUserId;
+    if (appUserId == null || appUserId.isEmpty) return null;
+
+    try {
+      final uri = Uri.parse(kCheckSubscriptionUrl)
+          .replace(queryParameters: {'appUserId': appUserId});
+      final response = await http.get(uri);
+      if (response.statusCode != 200) return null;
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      return data['managementUrl'] as String?;
+    } catch (_) {
+      return null;
     }
   }
 
