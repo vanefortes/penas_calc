@@ -398,6 +398,18 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                 ),
                 const SizedBox(height: 12),
 
+                // E-mail
+                _buildField(
+                  context,
+                  label: 'E-mail (opcional)',
+                  hint: 'contato@escritorio.com',
+                  controller: _email,
+                  icon: Icons.mail_outline_rounded,
+                  keyboard: TextInputType.emailAddress,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 12),
+
                 // OAB
                 _buildField(
                   context,
@@ -412,18 +424,6 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                         .hasMatch(v.trim());
                     return ok ? null : 'Use o formato: 123456/SP';
                   },
-                ),
-                const SizedBox(height: 12),
-
-                // E-mail
-                _buildField(
-                  context,
-                  label: 'E-mail (opcional)',
-                  hint: 'contato@escritorio.com',
-                  controller: _email,
-                  icon: Icons.mail_outline_rounded,
-                  keyboard: TextInputType.emailAddress,
-                  isDark: isDark,
                 ),
                 const SizedBox(height: 24),
 
