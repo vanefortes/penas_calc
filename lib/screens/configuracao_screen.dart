@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -686,8 +687,17 @@ class _AssinaturaTileState extends State<_AssinaturaTile> {
   bool _restaurando = false;
 
   Future<void> _abrirGerenciamento() async {
-    // URL padrão da Apple para a tela de gerenciamento de assinaturas.
-    final uri = Uri.parse('https://apps.apple.com/account/subscriptions');
+    // Android: leva direto para a lista de assinaturas do app na Play Store.
+    // iOS: leva para a tela de gerenciamento de assinaturas da Apple.
+    Uri uri;
+    if (Platform.isAndroid) {
+      final info = await PackageInfo.fromPlatform();
+      uri = Uri.parse(
+        'https://play.google.com/store/account/subscriptions?package=${info.packageName}',
+      );
+    } else {
+      uri = Uri.parse('https://apps.apple.com/account/subscriptions');
+    }
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
