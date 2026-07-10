@@ -282,7 +282,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                     ]),
                     _Field(label: 'Nome do(a) advogado(a) *', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: false),
                     _Field(label: 'E-mail *',                keyboard: TextInputType.emailAddress, placeholder: 'contato@escritorio.com', controller: _email),
-                    _Field(label: 'OAB / UF',               placeholder: '123.456 / SP',        controller: _oab,   mono: true),
+                    _Field(label: 'OAB / UF',               placeholder: '123.456/SP',        controller: _oab,   mono: true),
                     const SizedBox(height: 14),
                     _BiometriaCard(on: _biometria, onChanged: (v) => setState(() => _biometria = v)),
                   ]),
