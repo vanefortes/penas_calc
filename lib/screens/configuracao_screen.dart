@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -685,12 +686,36 @@ class _AssinaturaTile extends StatefulWidget {
 
 class _AssinaturaTileState extends State<_AssinaturaTile> {
   bool _restaurando = false;
+  bool _abrindoGerenciamento = false;
 
   Future<void> _abrirGerenciamento() async {
+    // Web: assinatura via RevenueCat Billing/Stripe — abre o Customer
+    // Portal deles (troca de cartão, fatura, cancelamento).
+    if (kIsWeb) {
+      setState(() => _abrindoGerenciamento = true);
+      final url = await SubscriptionService.instance.getManagementUrlWeb();
+      if (!mounted) return;
+      setState(() => _abrindoGerenciamento = false);
+
+      if (url == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Não foi possível abrir o gerenciamento da assinatura agora.'),
+          behavior: SnackBarBehavior.floating,
+        ));
+        return;
+      }
+
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
     // Android: leva direto para a lista de assinaturas do app na Play Store.
     // iOS: leva para a tela de gerenciamento de assinaturas da Apple.
     Uri uri;
-    if (Platform.isAndroid) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       final info = await PackageInfo.fromPlatform();
       uri = Uri.parse(
         'https://play.google.com/store/account/subscriptions?package=${info.packageName}',
@@ -747,7 +772,7 @@ class _AssinaturaTileState extends State<_AssinaturaTile> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  state.isPremium ? 'Assinatura Premium ativa' : 'Sem assinatura ativa',
+                  state.isPremium ? 'Assinatura Premium Ativada' : 'Sem assinatura ativa',
                   style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -756,12 +781,14 @@ class _AssinaturaTileState extends State<_AssinaturaTile> {
           const SizedBox(height: 12),
           if (state.isPremium)
             OutlinedButton(
-              onPressed: _abrirGerenciamento,
+              onPressed: _abrindoGerenciamento ? null : _abrirGerenciamento,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 44),
                 side: BorderSide(color: primary.withOpacity(0.4)),
               ),
-              child: Text('Gerenciar assinatura', style: GoogleFonts.inter(fontSize: 13.5)),
+              child: _abrindoGerenciamento
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text('Gerenciar assinatura', style: GoogleFonts.inter(fontSize: 13.5)),
             )
           else
             ElevatedButton(

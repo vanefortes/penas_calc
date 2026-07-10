@@ -33,6 +33,9 @@
 
   <title>Penal Calculator</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- SDK Web da RevenueCat, usado no checkout de assinatura (web/checkout_service.dart) -->
+  <script src="https://unpkg.com/@revenuecat/purchases-js@1/dist/Purchases.umd.js"></script>
 </head>
 <body>
   <!--
@@ -44,5 +47,44 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+
+  <!--
+    Camada de checkout web (RevenueCat presentPaywall). Fica escondida por
+    padrão; o Dart (lib/services/web_checkout/checkout_service_web.dart)
+    mostra/esconde e injeta o formulário de pagamento aqui dentro.
+    Fica fora da árvore de widgets do Flutter de propósito, pra não depender
+    de APIs de platform view que mudam entre versões do Flutter Web.
+  -->
+  <div id="rc-checkout-overlay" style="
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+    ">
+    <div style="
+        position: relative;
+        width: min(480px, 92vw);
+        max-height: 90vh;
+        overflow: auto;
+        background: #fff;
+        border-radius: 16px;
+        padding: 8px;
+      ">
+      <button id="rc-checkout-close" style="
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          z-index: 1;
+          border: none;
+          background: transparent;
+          font-size: 20px;
+          cursor: pointer;
+        ">✕</button>
+      <div id="rc-checkout-target" style="min-height: 640px; min-width: 320px;"></div>
+    </div>
+  </div>
 </body>
 </html>
