@@ -2,6 +2,7 @@
 // Tela dedicada para edição dos dados cadastrais.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +11,7 @@ import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
 import '../widgets/avatar_perfil.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
+import '../utils/oab_formatter.dart';
 
 class EditarCadastroScreen extends StatefulWidget {
   const EditarCadastroScreen({super.key});
@@ -414,15 +416,16 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                 _buildField(
                   context,
                   label: 'OAB / UF',
-                  hint: '123.456 / SP',
+                  hint: '123.456/PR',
                   controller: _oab,
                   icon: Icons.shield_rounded,
                   isDark: isDark,
+                  inputFormatters: [OabInputFormatter()],
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return null; // opcional
-                    final ok = RegExp(r'^\d{1,6}\s*/\s*[A-Za-z]{2}$')
+                    final ok = RegExp(r'^\d{1,3}(\.\d{1,3})?/[A-Za-z]{2}$')
                         .hasMatch(v.trim());
-                    return ok ? null : 'Use o formato: 123456/SP';
+                    return ok ? null : 'Use o formato: 123.456/PR';
                   },
                 ),
                 const SizedBox(height: 24),
@@ -478,6 +481,7 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
     TextInputType? keyboard,
     String? Function(String?)? validator,
     bool autofocus = false,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     final primary = Theme.of(context).colorScheme.primary;
     final fg      = Theme.of(context).textTheme.titleMedium?.color
@@ -522,6 +526,7 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
         autofocus: autofocus,
         cursorColor: primary,
         validator: validator,
+        inputFormatters: inputFormatters,
         style: GoogleFonts.inter(fontSize: 15, color: fg),
         decoration: InputDecoration(
           labelText: label,
