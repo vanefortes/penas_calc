@@ -44,6 +44,26 @@ class EmailAuthService {
     return _auth.sendPasswordResetEmail(email: email);
   }
 
+  /// Envia (ou reenvia) o e-mail de verificação para o usuário logado.
+  /// Não faz nada se já não houver usuário logado ou se o e-mail já
+  /// estiver verificado.
+  static Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
+  /// Recarrega os dados do usuário logado e retorna se o e-mail já foi
+  /// verificado. Use isso antes de liberar o acesso ao app depois de um
+  /// cadastro ou login por e-mail/senha.
+  static Future<bool> isEmailVerified() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    await user.reload();
+    return _auth.currentUser?.emailVerified ?? false;
+  }
+
   /// Encerra a sessão do usuário no Firebase.
   static Future<void> signOut() => _auth.signOut();
 }

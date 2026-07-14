@@ -15,6 +15,7 @@ import '../services/firebase_auth_service.dart';
 import '../widgets/avatar_perfil.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
 import '../utils/oab_formatter.dart';
+import 'email_login_screen.dart';
 
 class EditarCadastroScreen extends StatefulWidget {
   const EditarCadastroScreen({super.key});
@@ -168,6 +169,16 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ));
+  }
+
+  /// Abre a tela de login/cadastro por e-mail e senha. Se concluído com
+  /// sucesso, preenche o campo de e-mail com o valor autenticado.
+  Future<void> _loginEmail() async {
+    final email = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const EmailLoginScreen()),
+    );
+    if (!mounted || email == null) return;
+    setState(() => _email.text = email);
   }
 
   Future<void> _salvar() async {    if (!(_formKey.currentState?.validate() ?? true)) return;
@@ -367,6 +378,22 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _loginEmail,
+                    icon: const Icon(Icons.mail_outline_rounded, size: 18),
+                    label: Text(
+                      'Entrar com e-mail e senha',
+                      style: GoogleFonts.inter(fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: primary.withOpacity(0.4)),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
 
                 // Avatar editável centralizado

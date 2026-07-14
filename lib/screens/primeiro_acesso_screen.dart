@@ -1,17 +1,20 @@
 // lib/screens/primeiro_acesso_screen.dart
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
 import '../utils/oab_formatter.dart';
+import 'email_login_screen.dart';
 
 // Paleta local — independente do tema global
 class _CP {
@@ -40,6 +43,17 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   bool _biometria = true;
   bool _googleLoading = false;
   bool _appleLoading = false;
+
+  static const _urlTermosDeUso =
+      'https://vanefortes.github.io/calc-penas-privacy/';
+
+  late final TapGestureRecognizer _termosRecognizer =
+      TapGestureRecognizer()..onTap = _abrirTermosDeUso;
+
+  Future<void> _abrirTermosDeUso() async {
+    final uri = Uri.parse(_urlTermosDeUso);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   // Sign in with Apple só faz sentido em plataformas Apple.
   bool get _appleDisponivel =>
@@ -94,9 +108,22 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     });
   }
 
+  /// Abre a tela de login/cadastro por e-mail e senha. Se concluído com
+  /// sucesso, preenche o campo de e-mail com o valor autenticado — os
+  /// demais campos (nome, OAB) continuam sendo preenchidos manualmente,
+  /// já que o Firebase Auth por e-mail não fornece nome.
+  Future<void> _loginEmail() async {
+    final email = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const EmailLoginScreen()),
+    );
+    if (!mounted || email == null) return;
+    setState(() => _email.text = email);
+  }
+
   @override
   void dispose() {
     _nome.dispose(); _oab.dispose(); _email.dispose();
+    _termosRecognizer.dispose();
     super.dispose();
   }
 
@@ -287,6 +314,26 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _loginEmail,
+                        icon: const Icon(Icons.mail_outline_rounded,
+                            size: 20, color: _CP.goldBright),
+                        label: Text(
+                          'Entrar com e-mail e senha',
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: _CP.cream),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          side: const BorderSide(color: _CP.goldDeep, width: 1),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(11)),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Row(children: [
                       Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
@@ -316,8 +363,11 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                   style: GoogleFonts.inter(fontSize: 11, color: _CP.textFaint),
                   children: [
                     const TextSpan(text: 'Ao continuar você concorda com os '),
-                    TextSpan(text: 'termos de uso',
-                      style: GoogleFonts.inter(fontSize: 11, color: _CP.goldBright)),
+                    TextSpan(
+                      text: 'termos de uso',
+                      style: GoogleFonts.inter(fontSize: 11, color: _CP.goldBright),
+                      recognizer: _termosRecognizer,
+                    ),
                   ],
                 )),
               ),
