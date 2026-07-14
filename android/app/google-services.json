@@ -1,26 +1,59 @@
 {
   "project_info": {
-    "project_number": "953738949350",
-    "project_id": "penal-calc",
-    "storage_bucket": "penal-calc.firebasestorage.app"
+    "project_number": "148303670455",
+    "project_id": "penas-calc",
+    "storage_bucket": "penas-calc.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:953738949350:android:39cdf76fc0a26e5c928127",
+        "mobilesdk_app_id": "1:148303670455:android:18d609e21735af72b03132",
         "android_client_info": {
           "package_name": "com.vforttes.penas_calc"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "148303670455-g07a8j6th324qeh3jop4250748aumrg8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vforttes.penas_calc",
+            "certificate_hash": "5477728543e7805b3b02937baf966740817a13c6"
+          }
+        },
+        {
+          "client_id": "148303670455-h89k14hgqch3c4fnngmftq26ne8kvk85.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vforttes.penas_calc",
+            "certificate_hash": "05268584cf55fa7b54c13e14b24cba966d7dcd50"
+          }
+        },
+        {
+          "client_id": "148303670455-9893m7jl1tqqphqv8ft69tu8m76e4r70.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAPHiIDPLdvAXaRgmCS4pEN5uURFgmJPwg"
+          "current_key": "AIzaSyCtUQs81yM7wzs_D82UoXWK8uhutyDYGbg"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "148303670455-558pbf6atg8lr4c2332m016e0m3dua1e.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "148303670455-20g46966frr6hec2d92duesf7v03rhld.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.vforttes.penascalc"
+              }
+            }
+          ]
         }
       }
     }

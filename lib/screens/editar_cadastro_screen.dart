@@ -1,6 +1,8 @@
 // lib/screens/editar_cadastro_screen.dart
 // Tela dedicada para edição dos dados cadastrais.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
@@ -9,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
+import '../services/firebase_auth_service.dart';
 import '../widgets/avatar_perfil.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
 import '../utils/oab_formatter.dart';
@@ -113,6 +116,20 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
     if (user.foto.isNotEmpty) {
       context.read<AppState>().setFotoPerfil(user.foto);
     }
+
+    // Troca as credenciais do Google por uma sessão no Firebase.
+    // Roda em segundo plano: se falhar, os dados já importados acima
+    // continuam válidos — só não teremos um UID do Firebase associado.
+    unawaited(
+      FirebaseAuthService.instance
+          .signInWithGoogleCredential(
+            idToken: user.idToken,
+            accessToken: user.accessToken,
+          )
+          .catchError((Object e) {
+        debugPrint('Falha ao autenticar no Firebase com Google: $e');
+      }),
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [

@@ -47,28 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCZ9UZebDXUlYAFDwmMFJNcg5p4dP7_4Is',
-    appId: '1:953738949350:web:962bb6abf88de9c9928127',
-    messagingSenderId: '953738949350',
-    projectId: 'penal-calc',
-    authDomain: 'penal-calc.firebaseapp.com',
-    storageBucket: 'penal-calc.firebasestorage.app',
+    apiKey: 'AIzaSyBLwrKxd3fT9mayRt9WCqZR9bYVp-kK05A',
+    appId: '1:148303670455:web:d32eaaef7235dd92b03132',
+    messagingSenderId: '148303670455',
+    projectId: 'penas-calc',
+    authDomain: 'penas-calc.firebaseapp.com',
+    storageBucket: 'penas-calc.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAPHiIDPLdvAXaRgmCS4pEN5uURFgmJPwg',
-    appId: '1:953738949350:android:39cdf76fc0a26e5c928127',
-    messagingSenderId: '953738949350',
-    projectId: 'penal-calc',
-    storageBucket: 'penal-calc.firebasestorage.app',
+    apiKey: 'AIzaSyCtUQs81yM7wzs_D82UoXWK8uhutyDYGbg',
+    appId: '1:148303670455:android:18d609e21735af72b03132',
+    messagingSenderId: '148303670455',
+    projectId: 'penas-calc',
+    storageBucket: 'penas-calc.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDeLRkghkqNHg2Vht_c9YbMKsTBYdXv9cY',
-    appId: '1:953738949350:ios:e615f347526442aa928127',
-    messagingSenderId: '953738949350',
-    projectId: 'penal-calc',
-    storageBucket: 'penal-calc.firebasestorage.app',
+    apiKey: 'AIzaSyATUaMNI-qR8tqmyggIQenDnL1iPyYQ3do',
+    appId: '1:148303670455:ios:114b989a698b4dcdb03132',
+    messagingSenderId: '148303670455',
+    projectId: 'penas-calc',
+    storageBucket: 'penas-calc.firebasestorage.app',
+    androidClientId: '148303670455-3kkh91p0f81ni2jd2a15ha3moiol3nq2.apps.googleusercontent.com',
+    iosClientId: '148303670455-20g46966frr6hec2d92duesf7v03rhld.apps.googleusercontent.com',
     iosBundleId: 'com.vforttes.penascalc',
   );
 }
