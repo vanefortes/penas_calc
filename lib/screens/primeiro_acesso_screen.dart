@@ -90,7 +90,10 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
             idToken: user.idToken,
             accessToken: user.accessToken,
           )
-          .catchError((Object e) {
+          .then((_) {
+        if (!mounted) return;
+        context.read<AppState>().reidentificarAssinatura();
+      }).catchError((Object e) {
         debugPrint('Falha ao autenticar no Firebase com Google: $e');
       }),
     );
@@ -118,6 +121,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     );
     if (!mounted || email == null) return;
     setState(() => _email.text = email);
+    await context.read<AppState>().reidentificarAssinatura();
   }
 
   @override

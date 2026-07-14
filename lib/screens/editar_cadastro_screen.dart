@@ -127,7 +127,10 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
             idToken: user.idToken,
             accessToken: user.accessToken,
           )
-          .catchError((Object e) {
+          .then((_) {
+        if (!mounted) return;
+        context.read<AppState>().reidentificarAssinatura();
+      }).catchError((Object e) {
         debugPrint('Falha ao autenticar no Firebase com Google: $e');
       }),
     );
@@ -179,6 +182,7 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
     );
     if (!mounted || email == null) return;
     setState(() => _email.text = email);
+    await context.read<AppState>().reidentificarAssinatura();
   }
 
   Future<void> _salvar() async {    if (!(_formKey.currentState?.validate() ?? true)) return;

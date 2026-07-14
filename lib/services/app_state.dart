@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/calculo.dart';
 import '../theme/app_theme.dart';
 import 'google_auth_service.dart';
+import 'firebase_auth_service.dart';
 import 'subscription_service.dart';
 
 /// Quantos cálculos um usuário sem assinatura pode fazer gratuitamente,
@@ -29,6 +30,28 @@ class AppState extends ChangeNotifier {
     _isPremium = premium;
     _assinaturaVerificada = true;
     notifyListeners();
+  }
+
+  /// Retorna o melhor identificador disponível para vincular a assinatura
+  /// no RevenueCat: o UID do Firebase (estável e único por conta), com
+  /// fallback para o e-mail cadastrado localmente — usado só quando o
+  /// usuário ainda não autenticou com o Firebase (ex: preencheu os dados
+  /// manualmente, sem login com Google/Email/senha).
+  String? _resolverAppUserId() {
+    final uid = FirebaseAuthService.instance.currentUser?.uid;
+    if (uid != null && uid.isNotEmpty) return uid;
+    return _usuarioEmail.isNotEmpty ? _usuarioEmail : null;
+  }
+
+  /// Revincula o RevenueCat ao identificador mais atual disponível (o UID
+  /// do Firebase, assim que uma sessão existir) e reconsulta o status de
+  /// assinatura. Chame isso logo após um login com Google ou Email/senha,
+  /// para não depender apenas do próximo reinício do app.
+  Future<void> reidentificarAssinatura() async {
+    final appUserId = _resolverAppUserId();
+    if (appUserId == null) return;
+    await SubscriptionService.instance.identify(appUserId);
+    await atualizarStatusAssinatura();
   }
 
   // ── Cálculos gratuitos (usuário sem assinatura) ─────────────
@@ -115,10 +138,12 @@ class AppState extends ChangeNotifier {
     _carregado = true;
     notifyListeners();
 
-    // Vincula o RevenueCat/checkout web ao e-mail do usuário (se já
-    // conhecido) antes de checar o status de assinatura.
-    if (_usuarioEmail.isNotEmpty) {
-      await SubscriptionService.instance.identify(_usuarioEmail);
+    // Vincula o RevenueCat/checkout web ao melhor identificador disponível
+    // (UID do Firebase, com fallback para e-mail) antes de checar o status
+    // de assinatura.
+    final appUserId = _resolverAppUserId();
+    if (appUserId != null) {
+      await SubscriptionService.instance.identify(appUserId);
     }
 
     // Consulta o status de assinatura em paralelo, sem travar a UI.
@@ -182,8 +207,11 @@ class AppState extends ChangeNotifier {
     await p.setBool('biometria_ativa', biometria);
 
     if (email.isNotEmpty) {
-      await SubscriptionService.instance.identify(email);
-      await atualizarStatusAssinatura();
+      final appUserId = _resolverAppUserId();
+      if (appUserId != null) {
+        await SubscriptionService.instance.identify(appUserId);
+        await atualizarStatusAssinatura();
+      }
     }
   }
 
