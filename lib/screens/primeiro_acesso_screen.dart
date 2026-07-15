@@ -8,12 +8,10 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
 import '../services/firebase_auth_service.dart';
-import '../services/email_auth_service.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
 import '../utils/oab_formatter.dart';
 import 'email_login_screen.dart';
@@ -95,6 +93,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
           )
           .then((_) {
         if (!mounted) return;
+        setState(() {});
         context.read<AppState>().reidentificarAssinatura();
       }).catchError((Object e) {
         debugPrint('Falha ao autenticar no Firebase com Google: $e');
@@ -112,6 +111,21 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
       if (user.nome.isNotEmpty) _nome.text = user.nome;
       if (user.email.isNotEmpty) _email.text = user.email;
     });
+
+    unawaited(
+      FirebaseAuthService.instance
+          .signInWithAppleCredential(
+            idToken: user.identityToken,
+            rawNonce: user.rawNonce,
+          )
+          .then((_) {
+        if (!mounted) return;
+        setState(() {});
+        context.read<AppState>().reidentificarAssinatura();
+      }).catchError((Object e) {
+        debugPrint('Falha ao autenticar no Firebase com Apple: $e');
+      }),
+    );
   }
 
   /// Abre a tela de login/cadastro por e-mail e senha. Se concluído com
@@ -134,10 +148,6 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     super.dispose();
   }
 
-  bool _emailValido(String email) {
-    return RegExp(r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$').hasMatch(email);
-  }
-
   bool _oabValida(String oab) {
     if (oab.isEmpty) return true; // OAB é opcional
     return RegExp(
@@ -145,8 +155,27 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     ).hasMatch(oab.trim());
   }
 
+  /// Só é possível continuar depois de logar com Google, Apple ou
+  /// Email/senha — o e-mail não é mais digitado manualmente, então
+  /// precisa vir de uma dessas sessões já confirmadas pelo Firebase.
+  bool get _autenticado => FirebaseAuthService.instance.currentUser != null;
+
+  /// Desconecta a sessão atual para permitir escolher outra conta.
+  Future<void> _trocarConta() async {
+    await FirebaseAuthService.instance.signOut();
+    if (!mounted) return;
+    setState(() => _email.text = '');
+  }
+
   Future<void> _concluir() async {
     if (_concluindo) return;
+
+    if (!_autenticado) {
+      _mostrarErro(
+        'Faça login com Google, Apple ou Email/senha para continuar.',
+      );
+      return;
+    }
 
     final nome  = _nome.text.trim();
     final email = _email.text.trim();
@@ -158,28 +187,13 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     }
 
     if (email.isEmpty) {
-      _mostrarErro('O e-mail é obrigatório para continuar.');
-      return;
-    }
-
-    if (!_emailValido(email)) {
-      _mostrarErro('Digite um e-mail válido. Ex: nome@dominio.com');
+      _mostrarErro('Não foi possível identificar seu e-mail. Faça login novamente.');
       return;
     }
 
     if (!_oabValida(oab)) {
       _mostrarErro('OAB inválida. Use o formato: 123.456/PR');
       return;
-    }
-
-    // Se ainda não existe uma sessão do Firebase (ou seja, o usuário não
-    // passou por "Preencher com conta Google" nem "Entrar com e-mail e
-    // senha"), este é o caminho 100% manual — precisamos criar uma conta
-    // nos bastidores e confirmar a posse do e-mail antes de liberar o
-    // acesso.
-    if (FirebaseAuthService.instance.currentUser == null) {
-      final confirmado = await _criarContaEConfirmarEmail(email);
-      if (!mounted || !confirmado) return;
     }
 
     setState(() => _concluindo = true);
@@ -192,43 +206,6 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     );
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
-  }
-
-  /// Cria uma conta no Firebase com senha aleatória para este e-mail e
-  /// mostra a tela de confirmação. Retorna `true` se o e-mail foi
-  /// confirmado com sucesso (podendo prosseguir com o acesso ao app).
-  Future<bool> _criarContaEConfirmarEmail(String email) async {
-    setState(() => _concluindo = true);
-    try {
-      await EmailAuthService.signUpSenhaAleatoria(email);
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return false;
-      setState(() => _concluindo = false);
-      if (e.code == 'email-already-in-use') {
-        _mostrarErro(
-          'Este e-mail já está cadastrado. Toque em "Entrar com e-mail e '
-          'senha" e use "Esqueci minha senha" para acessar essa conta.',
-        );
-      } else {
-        _mostrarErro('Não foi possível confirmar o e-mail. Tente novamente.');
-      }
-      return false;
-    } catch (_) {
-      if (!mounted) return false;
-      setState(() => _concluindo = false);
-      _mostrarErro('Não foi possível confirmar o e-mail. Tente novamente.');
-      return false;
-    }
-
-    if (!mounted) return false;
-    setState(() => _concluindo = false);
-
-    final confirmado = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => EmailLoginScreen(emailJaCriado: email),
-      ),
-    );
-    return confirmado != null;
   }
 
   void _mostrarErro(String mensagem) {
@@ -391,19 +368,47 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(children: [
-                      Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text('ou preencha manualmente',
-                          style: GoogleFonts.inter(
-                            fontSize: 10, color: _CP.textFaint)),
+                    const SizedBox(height: 14),
+                    if (_autenticado)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _CP.fieldBg,
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(color: _CP.goldDeep.withOpacity(0.5)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.check_circle_rounded,
+                              size: 16, color: _CP.goldBright),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Conectado como ${_email.text}',
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(fontSize: 12, color: _CP.cream),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _trocarConta,
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text('Trocar',
+                                style: GoogleFonts.inter(fontSize: 11, color: _CP.goldBright)),
+                          ),
+                        ]),
+                      )
+                    else
+                      Text(
+                        'Faça login acima para continuar.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(fontSize: 11, color: _CP.textFaint),
                       ),
-                      Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
-                    ]),
+                    const SizedBox(height: 14),
                     _Field(label: 'Nome do(a) advogado(a) *', placeholder: 'Dr(a). seu nome',   controller: _nome,  autofocus: false),
-                    _Field(label: 'E-mail *',                keyboard: TextInputType.emailAddress, placeholder: 'contato@escritorio.com', controller: _email),
                     _Field(label: 'OAB / UF',               placeholder: '123.456/PR',        controller: _oab,   mono: true, inputFormatters: [OabInputFormatter()]),
                     const SizedBox(height: 14),
                     _BiometriaCard(on: _biometria, onChanged: (v) => setState(() => _biometria = v)),

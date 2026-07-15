@@ -244,7 +244,16 @@ class AppState extends ChangeNotifier {
     await p.setDouble('foto_scale',    scale);
   }
 
-  Future<void> resetarPrimeiroAcesso() async {
+  /// Desconecta a conta atualmente vinculada (Google, Apple ou
+  /// Email/senha) e volta pro Primeiro Acesso, permitindo entrar com
+  /// outra conta. Mantém o histórico de cálculos e as preferências do
+  /// app intactos — só os dados de perfil (nome, OAB, foto, biometria)
+  /// são limpos, já que serão preenchidos de novo no próximo login.
+  Future<void> trocarConta() async {
+    try {
+      await FirebaseAuthService.instance.signOut();
+    } catch (_) {}
+
     _primeiroAcessoConcluido = false;
     _usuarioNome = _usuarioOab = _usuarioEmail = '';
     _biometriaAtiva = false;

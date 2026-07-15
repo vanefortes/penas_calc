@@ -11,14 +11,15 @@ import '../widgets/avatar_perfil.dart';
 class DadosCadastraisScreen extends StatelessWidget {
   const DadosCadastraisScreen({super.key});
 
-  Future<void> _confirmarReset(BuildContext context) async {
+  Future<void> _confirmarTrocaDeConta(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Resetar primeiro acesso?'),
+        title: const Text('Trocar de conta?'),
         content: const Text(
-          'Os dados cadastrais serão apagados deste dispositivo e o '
-          'onboarding será exibido novamente na próxima abertura.',
+          'Você será desconectado da conta atual. Seu histórico de '
+          'cálculos é mantido — só os dados de perfil (nome, OAB, foto) '
+          'serão pedidos de novo no próximo login.',
         ),
         actions: [
           TextButton(
@@ -28,13 +29,13 @@ class DadosCadastraisScreen extends StatelessWidget {
           FilledButton.tonal(
             style: FilledButton.styleFrom(foregroundColor: Colors.red.shade700),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Resetar'),
+            child: const Text('Trocar de conta'),
           ),
         ],
       ),
     );
     if (ok != true || !context.mounted) return;
-    await context.read<AppState>().resetarPrimeiroAcesso();
+    await context.read<AppState>().trocarConta();
     if (!context.mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/onboarding', (_) => false);
   }
@@ -205,7 +206,7 @@ class DadosCadastraisScreen extends StatelessWidget {
             _sectionTitle(context, 'Zona de risco'),
             const SizedBox(height: 10),
             InkWell(
-              onTap: () => _confirmarReset(context),
+              onTap: () => _confirmarTrocaDeConta(context),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.all(14),
@@ -215,14 +216,14 @@ class DadosCadastraisScreen extends StatelessWidget {
                   border: Border.all(color: Colors.red.shade300.withOpacity(0.5), width: 0.8),
                 ),
                 child: Row(children: [
-                  Icon(Icons.restart_alt_rounded, size: 22, color: Colors.red.shade400),
+                  Icon(Icons.switch_account_rounded, size: 22, color: Colors.red.shade400),
                   const SizedBox(width: 14),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Resetar primeiro acesso',
+                    Text('Trocar de conta',
                       style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600,
                         color: Colors.red.shade400)),
                     const SizedBox(height: 2),
-                    Text('Apaga os dados cadastrais e exibe o onboarding novamente.',
+                    Text('Desconecta a conta atual, mantendo o histórico de cálculos.',
                       style: GoogleFonts.inter(fontSize: 12,
                         color: Theme.of(context).textTheme.bodySmall?.color)),
                   ])),

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/app_state.dart';
 import '../services/subscription_service.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/google_auth_service.dart';
+import '../services/apple_auth_service.dart';
 import '../models/calculo.dart';
 import '../theme/app_theme.dart';
 import '../widgets/avatar_perfil.dart';
@@ -585,9 +589,9 @@ class _ExcluirContaTile extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Excluir conta e dados?'),
         content: const Text(
-          'Isso vai apagar permanentemente seu perfil, histórico de '
-          'cálculos e preferências salvas neste dispositivo, e desconectar '
-          'sua conta Google. Essa ação não pode ser desfeita.',
+          'Isso vai apagar permanentemente sua conta, perfil, histórico de '
+          'cálculos e preferências salvas neste dispositivo. Essa ação não '
+          'pode ser desfeita.',
         ),
         actions: [
           TextButton(
@@ -630,11 +634,192 @@ class _ExcluirContaTile extends StatelessWidget {
     );
     if (confirmadoFinal != true || !context.mounted) return;
 
+    final sucesso = await _excluirContaNoFirebase(context);
+    if (!sucesso || !context.mounted) return;
+
     await context.read<AppState>().excluirContaEDados();
     if (!context.mounted) return;
 
     Navigator.of(context).pushNamedAndRemoveUntil(
         '/onboarding', (_) => false);
+  }
+
+  /// Exclui a conta do usuário no Firebase, reautenticando antes se
+  /// necessário. Retorna `true` se a conta foi excluída (ou se não havia
+  /// nenhuma conta Firebase vinculada) — nesse caso é seguro prosseguir
+  /// com a limpeza dos dados locais. Retorna `false` se algo impediu a
+  /// exclusão (erro exibido na tela, ou o usuário cancelou a
+  /// reautenticação) — nesse caso os dados locais NÃO são apagados, para
+  /// não deixar o app e o Firebase em estados inconsistentes.
+  Future<bool> _excluirContaNoFirebase(BuildContext context) async {
+    if (FirebaseAuthService.instance.currentUser == null) return true;
+
+    _mostrarProgresso(context);
+    try {
+      try {
+        await FirebaseAuthService.instance.deleteCurrentUser();
+        return true;
+      } on FirebaseAuthException catch (e) {
+        if (e.code != 'requires-recent-login') {
+          if (context.mounted) {
+            _mostrarErro(context,
+                'Não foi possível excluir a conta: ${e.message ?? e.code}');
+          }
+          return false;
+        }
+      }
+
+      // Sessão não é recente o bastante — precisa confirmar a identidade
+      // de novo antes de excluir.
+      if (!context.mounted) return false;
+      _fecharProgresso(context);
+      final reautenticado = await _reautenticar(context);
+      if (!reautenticado) return false;
+
+      if (!context.mounted) return false;
+      _mostrarProgresso(context);
+      await FirebaseAuthService.instance.deleteCurrentUser();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (context.mounted) {
+        _mostrarErro(context,
+            'Não foi possível excluir a conta: ${e.message ?? e.code}');
+      }
+      return false;
+    } catch (_) {
+      if (context.mounted) {
+        _mostrarErro(context, 'Não foi possível excluir a conta. Tente novamente.');
+      }
+      return false;
+    } finally {
+      if (context.mounted) _fecharProgresso(context);
+    }
+  }
+
+  /// Reautentica com o mesmo provedor usado no login atual (Google, Apple
+  /// ou Email/senha). Retorna `true` se a reautenticação foi concluída.
+  Future<bool> _reautenticar(BuildContext context) async {
+    final providerId = FirebaseAuthService.instance.currentProviderId;
+
+    try {
+      switch (providerId) {
+        case 'google.com':
+          final user = await GoogleAuthService.signIn();
+          if (user == null) return false;
+          await FirebaseAuthService.instance.reauthenticateWithGoogleCredential(
+            idToken: user.idToken,
+            accessToken: user.accessToken,
+          );
+          return true;
+
+        case 'apple.com':
+          final user = await AppleAuthService.signIn();
+          if (user == null) return false;
+          await FirebaseAuthService.instance.reauthenticateWithAppleCredential(
+            idToken: user.identityToken,
+            rawNonce: user.rawNonce,
+          );
+          return true;
+
+        case 'password':
+          if (!context.mounted) return false;
+          return _reautenticarComSenha(context);
+
+        default:
+          if (context.mounted) {
+            _mostrarErro(context,
+                'Não foi possível confirmar sua identidade. Saia e entre '
+                'na conta novamente antes de excluir.');
+          }
+          return false;
+      }
+    } on FirebaseAuthException catch (e) {
+      if (context.mounted) {
+        _mostrarErro(context, 'Não foi possível confirmar sua identidade: ${e.message ?? e.code}');
+      }
+      return false;
+    } catch (_) {
+      if (context.mounted) {
+        _mostrarErro(context, 'Não foi possível confirmar sua identidade. Tente novamente.');
+      }
+      return false;
+    }
+  }
+
+  Future<bool> _reautenticarComSenha(BuildContext context) async {
+    final senhaController = TextEditingController();
+    final email = FirebaseAuthService.instance.currentUser?.email ?? '';
+
+    final senha = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirme sua senha'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Digite a senha de $email para confirmar a exclusão.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: senhaController,
+              obscureText: true,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Senha'),
+              onSubmitted: (v) => Navigator.pop(ctx, v),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, senhaController.text),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (senha == null || senha.isEmpty) return false;
+
+    try {
+      await FirebaseAuthService.instance.reauthenticateWithEmailPassword(
+        email: email,
+        password: senha,
+      );
+      return true;
+    } on FirebaseAuthException catch (_) {
+      if (context.mounted) _mostrarErro(context, 'Senha incorreta.');
+      return false;
+    }
+  }
+
+  void _mostrarProgresso(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: CircularProgressIndicator(strokeWidth: 3),
+        ),
+      ),
+    );
+  }
+
+  void _fecharProgresso(BuildContext context) {
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  void _mostrarErro(BuildContext context, String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(mensagem),
+      backgroundColor: Colors.red.shade700,
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   @override

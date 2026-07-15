@@ -10,8 +10,6 @@
 // Erros são propagados como `FirebaseAuthException` — trate-os na UI para
 // mostrar mensagens amigáveis (ex: e-mail já em uso, senha fraca, etc.).
 
-import 'dart:math';
-
 import 'package:firebase_auth/firebase_auth.dart';
 
 class EmailAuthService {
@@ -28,28 +26,6 @@ class EmailAuthService {
       email: email,
       password: password,
     );
-  }
-
-  /// Cria uma conta vinculada a este e-mail com uma senha gerada
-  /// aleatoriamente, que nunca é exibida nem armazenada — usada quando o
-  /// usuário preenche os dados manualmente (sem escolher senha própria),
-  /// mas ainda assim precisamos de uma conta real no Firebase para
-  /// verificar a posse do e-mail. Se o usuário precisar entrar de novo
-  /// nesse mesmo e-mail em outro aparelho, o caminho é "Esqueci minha
-  /// senha" na tela de Email/senha (que define uma senha nova).
-  static Future<UserCredential> signUpSenhaAleatoria(String email) {
-    return signUp(email: email, password: _gerarSenhaAleatoria());
-  }
-
-  static String _gerarSenhaAleatoria({int tamanho = 32}) {
-    const chars =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        r'!@#$%*_-+=';
-    final rand = Random.secure();
-    return List.generate(
-      tamanho,
-      (_) => chars[rand.nextInt(chars.length)],
-    ).join();
   }
 
   /// Autentica um usuário existente com e-mail e senha.
