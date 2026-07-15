@@ -348,14 +348,6 @@ class _Rodape extends StatelessWidget {
               color: fg?.withOpacity(0.7),
             ),
           ),
-          Text(
-            'Todos os direitos reservados',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              color: fg?.withOpacity(0.7),
-            ),
-          ),
         ],
       ),
     );
