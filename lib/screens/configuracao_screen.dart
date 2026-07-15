@@ -9,6 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../services/app_state.dart';
 import '../services/subscription_service.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/email_auth_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
 import '../models/calculo.dart';
@@ -655,6 +656,7 @@ class _ExcluirContaTile extends StatelessWidget {
     if (FirebaseAuthService.instance.currentUser == null) return true;
 
     _mostrarProgresso(context);
+    var progressoAberto = true;
     try {
       try {
         await FirebaseAuthService.instance.deleteCurrentUser();
@@ -673,11 +675,13 @@ class _ExcluirContaTile extends StatelessWidget {
       // de novo antes de excluir.
       if (!context.mounted) return false;
       _fecharProgresso(context);
+      progressoAberto = false;
       final reautenticado = await _reautenticar(context);
       if (!reautenticado) return false;
 
       if (!context.mounted) return false;
       _mostrarProgresso(context);
+      progressoAberto = true;
       await FirebaseAuthService.instance.deleteCurrentUser();
       return true;
     } on FirebaseAuthException catch (e) {
@@ -692,7 +696,12 @@ class _ExcluirContaTile extends StatelessWidget {
       }
       return false;
     } finally {
-      if (context.mounted) _fecharProgresso(context);
+      // Só fecha o diálogo de progresso se ele realmente estiver aberto —
+      // ele já pode ter sido fechado manualmente acima (antes de pedir
+      // reautenticação), e fechar de novo aqui fecharia a tela por baixo
+      // (ou a última rota do app) em vez de um diálogo, causando o app
+      // "sumir" quando o usuário errasse a senha.
+      if (progressoAberto && context.mounted) _fecharProgresso(context);
     }
   }
 
@@ -723,7 +732,7 @@ class _ExcluirContaTile extends StatelessWidget {
 
         case 'password':
           if (!context.mounted) return false;
-          return _reautenticarComSenha(context);
+          return await _reautenticarComSenha(context);
 
         default:
           if (context.mounted) {
@@ -767,6 +776,14 @@ class _ExcluirContaTile extends StatelessWidget {
               decoration: const InputDecoration(labelText: 'Senha'),
               onSubmitted: (v) => Navigator.pop(ctx, v),
             ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => _esqueciSenhaNaExclusao(context, ctx, email),
+                child: Text('Esqueci minha senha',
+                    style: GoogleFonts.inter(fontSize: 12)),
+              ),
+            ),
           ],
         ),
         actions: [
@@ -796,6 +813,40 @@ class _ExcluirContaTile extends StatelessWidget {
     }
   }
 
+  /// Envia o e-mail de redefinição de senha e fecha o diálogo de
+  /// confirmação, já que sem a senha nova o usuário não tem como
+  /// continuar a exclusão nesta tentativa mesmo assim.
+  Future<void> _esqueciSenhaNaExclusao(
+    BuildContext context,
+    BuildContext dialogContext,
+    String email,
+  ) async {
+    if (email.isEmpty) {
+      if (context.mounted) {
+        _mostrarErro(context, 'Não foi possível identificar seu e-mail.');
+      }
+      return;
+    }
+
+    try {
+      await EmailAuthService.sendPasswordReset(email);
+      if (dialogContext.mounted) Navigator.pop(dialogContext);
+      if (context.mounted) {
+        _mostrarInfo(context,
+            'Enviamos um e-mail para $email com instruções para redefinir sua senha.');
+      }
+    } on FirebaseAuthException catch (e) {
+      if (context.mounted) {
+        _mostrarErro(
+            context, 'Não foi possível enviar o e-mail: ${e.message ?? e.code}');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _mostrarErro(context, 'Não foi possível enviar o e-mail de redefinição.');
+      }
+    }
+  }
+
   void _mostrarProgresso(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -818,6 +869,13 @@ class _ExcluirContaTile extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(mensagem),
       backgroundColor: Colors.red.shade700,
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  void _mostrarInfo(BuildContext context, String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(mensagem),
       behavior: SnackBarBehavior.floating,
     ));
   }
