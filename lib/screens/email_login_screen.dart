@@ -13,7 +13,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/email_auth_service.dart';
 
 class EmailLoginScreen extends StatefulWidget {
-  const EmailLoginScreen({super.key});
+  const EmailLoginScreen({super.key, this.emailJaCriado});
+
+  /// Quando informado, a tela pula direto para a espera de confirmação
+  /// desse e-mail, sem mostrar o formulário de login/cadastro — usado no
+  /// preenchimento manual do primeiro acesso, onde uma conta já foi criada
+  /// nos bastidores (com senha aleatória) e só falta confirmar o e-mail.
+  final String? emailJaCriado;
 
   @override
   State<EmailLoginScreen> createState() => _EmailLoginScreenState();
@@ -33,6 +39,19 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   /// usuário existente tenta entrar sem ter confirmado o e-mail ainda.
   bool _aguardandoVerificacao = false;
   String? _emailPendente;
+
+  @override
+  void initState() {
+    super.initState();
+    final emailJaCriado = widget.emailJaCriado;
+    if (emailJaCriado != null) {
+      _aguardandoVerificacao = true;
+      _emailPendente = emailJaCriado;
+      // A conta já foi criada por quem abriu esta tela — só falta enviar
+      // (ou reenviar) o e-mail de confirmação.
+      EmailAuthService.sendEmailVerification();
+    }
+  }
 
   @override
   void dispose() {
@@ -132,11 +151,19 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     }
   }
 
-  /// Cancela a espera de verificação e volta para o formulário. Encerra
-  /// a sessão criada, já que ela ainda não está verificada.
+  /// Cancela a espera de verificação. Se a tela foi aberta no modo
+  /// "e-mail já criado" (preenchimento manual), fecha e devolve `null`
+  /// para quem abriu — não faz sentido mostrar o formulário de login
+  /// nesse caso. Caso contrário, volta para o formulário normalmente.
   Future<void> _cancelarVerificacao() async {
     await EmailAuthService.signOut();
     if (!mounted) return;
+
+    if (widget.emailJaCriado != null) {
+      Navigator.of(context).pop();
+      return;
+    }
+
     setState(() {
       _aguardandoVerificacao = false;
       _emailPendente = null;

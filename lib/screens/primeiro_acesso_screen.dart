@@ -8,10 +8,12 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatf
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/email_auth_service.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
 import '../utils/oab_formatter.dart';
 import 'email_login_screen.dart';
@@ -43,6 +45,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   bool _biometria = true;
   bool _googleLoading = false;
   bool _appleLoading = false;
+  bool _concluindo = false;
 
   static const _urlTermosDeUso =
       'https://vanefortes.github.io/calc-penas-privacy/';
@@ -143,6 +146,8 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   }
 
   Future<void> _concluir() async {
+    if (_concluindo) return;
+
     final nome  = _nome.text.trim();
     final email = _email.text.trim();
     final oab   = _oab.text.trim();
@@ -167,6 +172,17 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
       return;
     }
 
+    // Se ainda não existe uma sessão do Firebase (ou seja, o usuário não
+    // passou por "Preencher com conta Google" nem "Entrar com e-mail e
+    // senha"), este é o caminho 100% manual — precisamos criar uma conta
+    // nos bastidores e confirmar a posse do e-mail antes de liberar o
+    // acesso.
+    if (FirebaseAuthService.instance.currentUser == null) {
+      final confirmado = await _criarContaEConfirmarEmail(email);
+      if (!mounted || !confirmado) return;
+    }
+
+    setState(() => _concluindo = true);
     final state = context.read<AppState>();
     await state.completarPrimeiroAcesso(
       nome: nome,
@@ -176,6 +192,43 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     );
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+  }
+
+  /// Cria uma conta no Firebase com senha aleatória para este e-mail e
+  /// mostra a tela de confirmação. Retorna `true` se o e-mail foi
+  /// confirmado com sucesso (podendo prosseguir com o acesso ao app).
+  Future<bool> _criarContaEConfirmarEmail(String email) async {
+    setState(() => _concluindo = true);
+    try {
+      await EmailAuthService.signUpSenhaAleatoria(email);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return false;
+      setState(() => _concluindo = false);
+      if (e.code == 'email-already-in-use') {
+        _mostrarErro(
+          'Este e-mail já está cadastrado. Toque em "Entrar com e-mail e '
+          'senha" e use "Esqueci minha senha" para acessar essa conta.',
+        );
+      } else {
+        _mostrarErro('Não foi possível confirmar o e-mail. Tente novamente.');
+      }
+      return false;
+    } catch (_) {
+      if (!mounted) return false;
+      setState(() => _concluindo = false);
+      _mostrarErro('Não foi possível confirmar o e-mail. Tente novamente.');
+      return false;
+    }
+
+    if (!mounted) return false;
+    setState(() => _concluindo = false);
+
+    final confirmado = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => EmailLoginScreen(emailJaCriado: email),
+      ),
+    );
+    return confirmado != null;
   }
 
   void _mostrarErro(String mensagem) {
@@ -359,7 +412,11 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
-                child: _GoldButton(label: 'ACESSAR APLICATIVO', onTap: _concluir),
+                child: _GoldButton(
+                  label: 'ACESSAR APLICATIVO',
+                  onTap: _concluir,
+                  carregando: _concluindo,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 18),
@@ -536,13 +593,18 @@ class _Toggle extends StatelessWidget {
 class _GoldButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  const _GoldButton({required this.label, required this.onTap});
+  final bool carregando;
+  const _GoldButton({
+    required this.label,
+    required this.onTap,
+    this.carregando = false,
+  });
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity, height: 54,
       child: ElevatedButton(
-        onPressed: onTap,
+        onPressed: carregando ? null : onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -560,11 +622,20 @@ class _GoldButton extends StatelessWidget {
           ),
           child: Container(
             alignment: Alignment.center,
-            child: Text(label,
-              style: GoogleFonts.cinzel(
-                fontSize: 14, fontWeight: FontWeight.w700,
-                letterSpacing: 14 * 0.16, color: _CP.navyDeep,
-              )),
+            child: carregando
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      valueColor: AlwaysStoppedAnimation(_CP.navyDeep),
+                    ),
+                  )
+                : Text(label,
+                    style: GoogleFonts.cinzel(
+                      fontSize: 14, fontWeight: FontWeight.w700,
+                      letterSpacing: 14 * 0.16, color: _CP.navyDeep,
+                    )),
           ),
         ),
       ),
