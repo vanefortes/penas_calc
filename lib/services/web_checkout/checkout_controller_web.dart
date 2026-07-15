@@ -66,7 +66,8 @@ class WebCheckoutController {
   }
 
   /// Configura o SDK JS uma única vez. Chame assim que souber o
-  /// appUserId (ex: e-mail do usuário logado).
+  /// appUserId (normalmente o UID do Firebase; cai para o e-mail só
+  /// quando não há sessão do Firebase — ver `AppState._resolverAppUserId`).
   Future<void> configurar({
     required String apiKey,
     required String appUserId,

@@ -51,6 +51,21 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   late final TapGestureRecognizer _termosRecognizer =
       TapGestureRecognizer()..onTap = _abrirTermosDeUso;
 
+  @override
+  void initState() {
+    super.initState();
+    final s = context.read<AppState>();
+    // Se já existir um perfil salvo localmente (ex: a sessão do Firebase
+    // foi perdida por algum motivo, mas os dados continuam no aparelho),
+    // preenche nome/OAB/biometria para a pessoa não ter que digitar tudo
+    // de novo — só falta logar de novo pra confirmar a identidade.
+    if (s.usuarioNome.isNotEmpty) {
+      _nome.text = s.usuarioNome;
+      _biometria = s.biometriaAtiva;
+    }
+    if (s.usuarioOab.isNotEmpty) _oab.text = s.usuarioOab;
+  }
+
   Future<void> _abrirTermosDeUso() async {
     final uri = Uri.parse(_urlTermosDeUso);
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -308,7 +323,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         label: Text(
                           _googleLoading
                               ? 'Conectando...'
-                              : 'Preencher com conta Google',
+                              : 'Entrar com a conta Google',
                           style: GoogleFonts.inter(
                             fontSize: 13, color: _CP.cream),
                         ),
