@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,6 +26,8 @@ import 'services/subscription_service.dart';
 import 'services/google_auth_service.dart';
 import 'services/update_service.dart';
 import 'screens/update_screen.dart';
+import 'services/android_update_service.dart';
+import 'screens/android_update_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -90,8 +94,13 @@ class AppEntry extends StatefulWidget {
 
 class _AppEntryState extends State<AppEntry> {
   bool _verificandoUpdate = true;
+
+  // iOS (via Apple) — mantém o modelo de UpdateInfo + tela própria.
   UpdateInfo _updateInfo = UpdateInfo.vazio;
   bool _updateDispensada = false;
+
+  // Android (via Play Core) — atualização opcional pendente, se houver.
+  bool _updateFlexivelAndroid = false;
 
   @override
   void initState() {
@@ -100,7 +109,22 @@ class _AppEntryState extends State<AppEntry> {
   }
 
   Future<void> _verificarAtualizacao() async {
-    final info = await UpdateService.verificar();
+    if (!kIsWeb && Platform.isAndroid) {
+      // Android: deixa o Play Core decidir. Se for obrigatória, a tela
+      // nativa do Google já é exibida dentro de `verificar()` — quando
+      // ela retorna, só falta seguir o fluxo normal do app.
+      final resultado = await AndroidUpdateService.verificar();
+      if (!mounted) return;
+      setState(() {
+        _updateFlexivelAndroid =
+            resultado == AndroidUpdateResultado.flexivelDisponivel;
+        _verificandoUpdate = false;
+      });
+      return;
+    }
+
+    // iOS e Web usam a checagem via Apple (Web sempre retorna "vazio").
+    final info = await UpdateService.verificarIOS();
     if (!mounted) return;
     setState(() {
       _updateInfo = info;
@@ -123,8 +147,15 @@ class _AppEntryState extends State<AppEntry> {
       );
     }
 
-    // Há atualização disponível e o usuário ainda não optou por seguir
-    // sem atualizar (opção só existe quando a atualização não é obrigatória).
+    // Android: atualização opcional pendente via Play Core.
+    if (_updateFlexivelAndroid) {
+      return AndroidUpdateScreen(
+        onContinuar: () => setState(() => _updateFlexivelAndroid = false),
+      );
+    }
+
+    // iOS: há atualização disponível e o usuário ainda não optou por
+    // seguir sem atualizar (opção só existe quando não é obrigatória).
     if (_updateInfo.disponivel && !_updateDispensada) {
       return UpdateScreen(
         info: _updateInfo,
