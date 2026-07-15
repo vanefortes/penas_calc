@@ -46,6 +46,23 @@ class FirebaseAuthService {
     return _auth.signInWithCredential(credential);
   }
 
+  /// Troca as credenciais do Sign in with Apple por uma sessão do Firebase.
+  ///
+  /// [idToken] é o identityToken retornado pela Apple. [rawNonce] é o
+  /// valor original (não criptografado) do nonce gerado antes da
+  /// autorização — necessário para o Firebase validar que o token não foi
+  /// reaproveitado (proteção contra replay attack).
+  Future<UserCredential> signInWithAppleCredential({
+    required String? idToken,
+    required String rawNonce,
+  }) {
+    final credential = OAuthProvider('apple.com').credential(
+      idToken: idToken,
+      rawNonce: rawNonce,
+    );
+    return _auth.signInWithCredential(credential);
+  }
+
   /// Encerra a sessão do usuário no Firebase.
   /// Não faz logout do Google/Apple — isso continua responsabilidade de
   /// cada serviço de provedor (`GoogleAuthService.signOut()`, etc.).

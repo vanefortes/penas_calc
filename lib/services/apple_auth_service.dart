@@ -4,6 +4,10 @@
 // social (aqui, Google) precisam oferecer "Sign in with Apple" como opção
 // equivalente.
 
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -24,11 +28,17 @@ class AppleAuthService {
   /// que já foi salvo — evitando que o login "pareça" ter falhado.
   static Future<AppleUserData?> signIn() async {
     try {
+      // O nonce protege contra replay attacks: a Apple recebe o hash, e o
+      // Firebase valida com o valor original ao trocar pela sessão.
+      final rawNonce = _gerarNonce();
+      final nonceHash = _sha256(rawNonce);
+
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        nonce: nonceHash,
       );
 
       final appleId = credential.userIdentifier ?? '';
@@ -64,6 +74,8 @@ class AppleAuthService {
         nome: nome,
         email: email,
         appleId: appleId,
+        identityToken: credential.identityToken,
+        rawNonce: rawNonce,
       );
     } on SignInWithAppleAuthorizationException catch (e) {
       // Usuário cancelou o fluxo (code == userCancelled) — não é um erro a
@@ -81,6 +93,19 @@ class AppleAuthService {
 
   /// Verifica se Sign in with Apple está disponível neste dispositivo/plataforma.
   static Future<bool> isAvailable() => SignInWithApple.isAvailable();
+
+  static String _gerarNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  static String _sha256(String input) =>
+      sha256.convert(utf8.encode(input)).toString();
 }
 
 class AppleUserData {
@@ -88,9 +113,18 @@ class AppleUserData {
   final String email;
   final String appleId;
 
+  /// Token de identidade da Apple. Necessário para autenticar no Firebase
+  /// via `FirebaseAuthService.signInWithAppleCredential`.
+  final String? identityToken;
+
+  /// Valor original (não criptografado) do nonce usado nesta autorização.
+  final String rawNonce;
+
   const AppleUserData({
     required this.nome,
     required this.email,
     required this.appleId,
+    required this.identityToken,
+    required this.rawNonce,
   });
 }
