@@ -323,7 +323,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         label: Text(
                           _googleLoading
                               ? 'Conectando...'
-                              : 'Preencher com conta Google',
+                              : 'Entrar com a conta Google',
                           style: GoogleFonts.inter(
                             fontSize: 13, color: _CP.cream),
                         ),
