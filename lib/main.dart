@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/app_state.dart';
+import 'services/firebase_auth_service.dart';
 import 'theme/app_theme.dart';
 import 'models/calculo.dart';
 import 'screens/splash_screen.dart';
@@ -97,22 +99,50 @@ class AppEntry extends StatelessWidget {
 
     if (!state.primeiroAcessoConcluido) return const OnboardingScreen();
 
-    // Aguarda a primeira consulta de status de assinatura antes de decidir
-    // se mostra o paywall, para não "piscar" a tela de bloqueio à toa.
-    if (!state.assinaturaVerificada) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF050A18),
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFC9A961)),
-        ),
-      );
-    }
+    // Revalida que a sessão do Firebase ainda existe antes de liberar o
+    // app — usa o stream (não `currentUser` direto), porque o Firebase
+    // pode levar um instante para restaurar uma sessão já salva ao abrir
+    // o app. Checar `currentUser` cedo demais daria um "falso positivo"
+    // de sessão perdida para quem já estava logado.
+    return StreamBuilder<User?>(
+      stream: FirebaseAuthService.instance.authStateChanges,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF050A18),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFC9A961)),
+            ),
+          );
+        }
 
-    if (state.biometriaAtiva) {
-      return LockScreen(child: const MainShell());
-    }
+        if (snapshot.data == null) {
+          // A sessão do Firebase não existe (ou foi perdida por algum
+          // motivo, ex: revogação) — volta direto pro login, sem repetir
+          // os slides de onboarding (que são só para quem nunca usou o
+          // app).
+          return const PrimeiroAcessoScreen();
+        }
 
-    return const MainShell();
+        // Aguarda a primeira consulta de status de assinatura antes de
+        // decidir se mostra o paywall, para não "piscar" a tela de
+        // bloqueio à toa.
+        if (!state.assinaturaVerificada) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF050A18),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFC9A961)),
+            ),
+          );
+        }
+
+        if (state.biometriaAtiva) {
+          return LockScreen(child: const MainShell());
+        }
+
+        return const MainShell();
+      },
+    );
   }
 }
 
