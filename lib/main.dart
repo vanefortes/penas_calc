@@ -4,10 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/app_state.dart';
-import 'services/firebase_auth_service.dart';
 import 'theme/app_theme.dart';
 import 'models/calculo.dart';
 import 'screens/splash_screen.dart';
@@ -24,6 +22,8 @@ import 'screens/editor_foto_screen.dart';
 import 'screens/lock_screen.dart';
 import 'services/subscription_service.dart';
 import 'services/google_auth_service.dart';
+import 'services/update_service.dart';
+import 'screens/update_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,14 +78,61 @@ class CalcPenasApp extends StatelessWidget {
 }
 
 /// Decide o que mostrar após a splash:
-/// — se já fez primeiro acesso, vai direto para MainShell
+/// — primeiro verifica se há uma atualização do app disponível;
+/// — se já fez primeiro acesso, vai direto para MainShell;
 /// — caso contrário, mostra o Onboarding.
-class AppEntry extends StatelessWidget {
+class AppEntry extends StatefulWidget {
   const AppEntry({super.key});
+
+  @override
+  State<AppEntry> createState() => _AppEntryState();
+}
+
+class _AppEntryState extends State<AppEntry> {
+  bool _verificandoUpdate = true;
+  UpdateInfo _updateInfo = UpdateInfo.vazio;
+  bool _updateDispensada = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarAtualizacao();
+  }
+
+  Future<void> _verificarAtualizacao() async {
+    final info = await UpdateService.verificar();
+    if (!mounted) return;
+    setState(() {
+      _updateInfo = info;
+      _verificandoUpdate = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+
+    // Aguarda a checagem de atualização (com timeout curto no serviço,
+    // então isso nunca trava o app por muito tempo).
+    if (_verificandoUpdate) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF050A18),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFC9A961)),
+        ),
+      );
+    }
+
+    // Há atualização disponível e o usuário ainda não optou por seguir
+    // sem atualizar (opção só existe quando a atualização não é obrigatória).
+    if (_updateInfo.disponivel && !_updateDispensada) {
+      return UpdateScreen(
+        info: _updateInfo,
+        onContinuar: _updateInfo.obrigatoria
+            ? null
+            : () => setState(() => _updateDispensada = true),
+      );
+    }
 
     // Aguarda carregar os dados do SharedPreferences
     if (!state.carregado) {
@@ -99,50 +146,22 @@ class AppEntry extends StatelessWidget {
 
     if (!state.primeiroAcessoConcluido) return const OnboardingScreen();
 
-    // Revalida que a sessão do Firebase ainda existe antes de liberar o
-    // app — usa o stream (não `currentUser` direto), porque o Firebase
-    // pode levar um instante para restaurar uma sessão já salva ao abrir
-    // o app. Checar `currentUser` cedo demais daria um "falso positivo"
-    // de sessão perdida para quem já estava logado.
-    return StreamBuilder<User?>(
-      stream: FirebaseAuthService.instance.authStateChanges,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF050A18),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFC9A961)),
-            ),
-          );
-        }
+    // Aguarda a primeira consulta de status de assinatura antes de decidir
+    // se mostra o paywall, para não "piscar" a tela de bloqueio à toa.
+    if (!state.assinaturaVerificada) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF050A18),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFC9A961)),
+        ),
+      );
+    }
 
-        if (snapshot.data == null) {
-          // A sessão do Firebase não existe (ou foi perdida por algum
-          // motivo, ex: revogação) — volta direto pro login, sem repetir
-          // os slides de onboarding (que são só para quem nunca usou o
-          // app).
-          return const PrimeiroAcessoScreen();
-        }
+    if (state.biometriaAtiva) {
+      return LockScreen(child: const MainShell());
+    }
 
-        // Aguarda a primeira consulta de status de assinatura antes de
-        // decidir se mostra o paywall, para não "piscar" a tela de
-        // bloqueio à toa.
-        if (!state.assinaturaVerificada) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF050A18),
-            body: Center(
-              child: CircularProgressIndicator(color: Color(0xFFC9A961)),
-            ),
-          );
-        }
-
-        if (state.biometriaAtiva) {
-          return LockScreen(child: const MainShell());
-        }
-
-        return const MainShell();
-      },
-    );
+    return const MainShell();
   }
 }
 
