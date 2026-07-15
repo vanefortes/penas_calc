@@ -1,6 +1,8 @@
 // lib/screens/editar_cadastro_screen.dart
 // Tela dedicada para edição dos dados cadastrais.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
@@ -9,9 +11,11 @@ import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
+import '../services/firebase_auth_service.dart';
 import '../widgets/avatar_perfil.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
 import '../utils/oab_formatter.dart';
+import 'email_login_screen.dart';
 
 class EditarCadastroScreen extends StatefulWidget {
   const EditarCadastroScreen({super.key});
@@ -114,6 +118,23 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
       context.read<AppState>().setFotoPerfil(user.foto);
     }
 
+    // Troca as credenciais do Google por uma sessão no Firebase.
+    // Roda em segundo plano: se falhar, os dados já importados acima
+    // continuam válidos — só não teremos um UID do Firebase associado.
+    unawaited(
+      FirebaseAuthService.instance
+          .signInWithGoogleCredential(
+            idToken: user.idToken,
+            accessToken: user.accessToken,
+          )
+          .then((_) {
+        if (!mounted) return;
+        context.read<AppState>().reidentificarAssinatura();
+      }).catchError((Object e) {
+        debugPrint('Falha ao autenticar no Firebase com Google: $e');
+      }),
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
         const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
@@ -151,6 +172,17 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ));
+  }
+
+  /// Abre a tela de login/cadastro por e-mail e senha. Se concluído com
+  /// sucesso, preenche o campo de e-mail com o valor autenticado.
+  Future<void> _loginEmail() async {
+    final email = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const EmailLoginScreen()),
+    );
+    if (!mounted || email == null) return;
+    setState(() => _email.text = email);
+    await context.read<AppState>().reidentificarAssinatura();
   }
 
   Future<void> _salvar() async {    if (!(_formKey.currentState?.validate() ?? true)) return;
@@ -350,6 +382,22 @@ class _EditarCadastroScreenState extends State<EditarCadastroScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _loginEmail,
+                    icon: const Icon(Icons.mail_outline_rounded, size: 18),
+                    label: Text(
+                      'Entrar com e-mail e senha',
+                      style: GoogleFonts.inter(fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: primary.withOpacity(0.4)),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
 
                 // Avatar editável centralizado

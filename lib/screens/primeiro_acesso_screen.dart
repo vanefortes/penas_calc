@@ -1,14 +1,22 @@
 // lib/screens/primeiro_acesso_screen.dart
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/app_state.dart';
 import '../services/google_auth_service.dart';
 import '../services/apple_auth_service.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/email_auth_service.dart';
 import '../widgets/google_signin_button/google_signin_button.dart';
 import '../utils/oab_formatter.dart';
+import 'email_login_screen.dart';
 
 // Paleta local — independente do tema global
 class _CP {
@@ -37,6 +45,18 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   bool _biometria = true;
   bool _googleLoading = false;
   bool _appleLoading = false;
+  bool _concluindo = false;
+
+  static const _urlTermosDeUso =
+      'https://vanefortes.github.io/calc-penas-privacy/';
+
+  late final TapGestureRecognizer _termosRecognizer =
+      TapGestureRecognizer()..onTap = _abrirTermosDeUso;
+
+  Future<void> _abrirTermosDeUso() async {
+    final uri = Uri.parse(_urlTermosDeUso);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   // Sign in with Apple só faz sentido em plataformas Apple.
   bool get _appleDisponivel =>
@@ -63,6 +83,23 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     if (user.foto.isNotEmpty) {
       context.read<AppState>().setFotoPerfil(user.foto);
     }
+
+    // Troca as credenciais do Google por uma sessão no Firebase.
+    // Roda em segundo plano: se falhar, os dados já importados acima
+    // continuam válidos — só não teremos um UID do Firebase associado.
+    unawaited(
+      FirebaseAuthService.instance
+          .signInWithGoogleCredential(
+            idToken: user.idToken,
+            accessToken: user.accessToken,
+          )
+          .then((_) {
+        if (!mounted) return;
+        context.read<AppState>().reidentificarAssinatura();
+      }).catchError((Object e) {
+        debugPrint('Falha ao autenticar no Firebase com Google: $e');
+      }),
+    );
   }
 
   Future<void> _loginApple() async {
@@ -77,9 +114,23 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     });
   }
 
+  /// Abre a tela de login/cadastro por e-mail e senha. Se concluído com
+  /// sucesso, preenche o campo de e-mail com o valor autenticado — os
+  /// demais campos (nome, OAB) continuam sendo preenchidos manualmente,
+  /// já que o Firebase Auth por e-mail não fornece nome.
+  Future<void> _loginEmail() async {
+    final email = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const EmailLoginScreen()),
+    );
+    if (!mounted || email == null) return;
+    setState(() => _email.text = email);
+    await context.read<AppState>().reidentificarAssinatura();
+  }
+
   @override
   void dispose() {
     _nome.dispose(); _oab.dispose(); _email.dispose();
+    _termosRecognizer.dispose();
     super.dispose();
   }
 
@@ -95,6 +146,8 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   }
 
   Future<void> _concluir() async {
+    if (_concluindo) return;
+
     final nome  = _nome.text.trim();
     final email = _email.text.trim();
     final oab   = _oab.text.trim();
@@ -119,6 +172,17 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
       return;
     }
 
+    // Se ainda não existe uma sessão do Firebase (ou seja, o usuário não
+    // passou por "Preencher com conta Google" nem "Entrar com e-mail e
+    // senha"), este é o caminho 100% manual — precisamos criar uma conta
+    // nos bastidores e confirmar a posse do e-mail antes de liberar o
+    // acesso.
+    if (FirebaseAuthService.instance.currentUser == null) {
+      final confirmado = await _criarContaEConfirmarEmail(email);
+      if (!mounted || !confirmado) return;
+    }
+
+    setState(() => _concluindo = true);
     final state = context.read<AppState>();
     await state.completarPrimeiroAcesso(
       nome: nome,
@@ -128,6 +192,43 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     );
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+  }
+
+  /// Cria uma conta no Firebase com senha aleatória para este e-mail e
+  /// mostra a tela de confirmação. Retorna `true` se o e-mail foi
+  /// confirmado com sucesso (podendo prosseguir com o acesso ao app).
+  Future<bool> _criarContaEConfirmarEmail(String email) async {
+    setState(() => _concluindo = true);
+    try {
+      await EmailAuthService.signUpSenhaAleatoria(email);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return false;
+      setState(() => _concluindo = false);
+      if (e.code == 'email-already-in-use') {
+        _mostrarErro(
+          'Este e-mail já está cadastrado. Toque em "Entrar com e-mail e '
+          'senha" e use "Esqueci minha senha" para acessar essa conta.',
+        );
+      } else {
+        _mostrarErro('Não foi possível confirmar o e-mail. Tente novamente.');
+      }
+      return false;
+    } catch (_) {
+      if (!mounted) return false;
+      setState(() => _concluindo = false);
+      _mostrarErro('Não foi possível confirmar o e-mail. Tente novamente.');
+      return false;
+    }
+
+    if (!mounted) return false;
+    setState(() => _concluindo = false);
+
+    final confirmado = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => EmailLoginScreen(emailJaCriado: email),
+      ),
+    );
+    return confirmado != null;
   }
 
   void _mostrarErro(String mensagem) {
@@ -270,6 +371,26 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _loginEmail,
+                        icon: const Icon(Icons.mail_outline_rounded,
+                            size: 20, color: _CP.goldBright),
+                        label: Text(
+                          'Entrar com e-mail e senha',
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: _CP.cream),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          side: const BorderSide(color: _CP.goldDeep, width: 1),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(11)),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Row(children: [
                       Expanded(child: Divider(color: _CP.goldDeep.withOpacity(0.5))),
@@ -291,7 +412,11 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
-                child: _GoldButton(label: 'ACESSAR APLICATIVO', onTap: _concluir),
+                child: _GoldButton(
+                  label: 'ACESSAR APLICATIVO',
+                  onTap: _concluir,
+                  carregando: _concluindo,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 18),
@@ -299,8 +424,11 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
                   style: GoogleFonts.inter(fontSize: 11, color: _CP.textFaint),
                   children: [
                     const TextSpan(text: 'Ao continuar você concorda com os '),
-                    TextSpan(text: 'termos de uso',
-                      style: GoogleFonts.inter(fontSize: 11, color: _CP.goldBright)),
+                    TextSpan(
+                      text: 'termos de uso',
+                      style: GoogleFonts.inter(fontSize: 11, color: _CP.goldBright),
+                      recognizer: _termosRecognizer,
+                    ),
                   ],
                 )),
               ),
@@ -465,13 +593,18 @@ class _Toggle extends StatelessWidget {
 class _GoldButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  const _GoldButton({required this.label, required this.onTap});
+  final bool carregando;
+  const _GoldButton({
+    required this.label,
+    required this.onTap,
+    this.carregando = false,
+  });
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity, height: 54,
       child: ElevatedButton(
-        onPressed: onTap,
+        onPressed: carregando ? null : onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -489,11 +622,20 @@ class _GoldButton extends StatelessWidget {
           ),
           child: Container(
             alignment: Alignment.center,
-            child: Text(label,
-              style: GoogleFonts.cinzel(
-                fontSize: 14, fontWeight: FontWeight.w700,
-                letterSpacing: 14 * 0.16, color: _CP.navyDeep,
-              )),
+            child: carregando
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      valueColor: AlwaysStoppedAnimation(_CP.navyDeep),
+                    ),
+                  )
+                : Text(label,
+                    style: GoogleFonts.cinzel(
+                      fontSize: 14, fontWeight: FontWeight.w700,
+                      letterSpacing: 14 * 0.16, color: _CP.navyDeep,
+                    )),
           ),
         ),
       ),

@@ -108,11 +108,30 @@ class GoogleAuthService {
     if (account.photoUrl != null) {
       fotoDataUrl = await _downloadFotoAsDataUrl(account.photoUrl!);
     }
+
+    // Token de identidade, usado para trocar por uma sessão no Firebase
+    // Authentication (ver `FirebaseAuthService.signInWithGoogleCredential`).
+    final String? idToken = account.authentication.idToken;
+
+    // Token de acesso (autorização), opcional para o Firebase mas recomendado.
+    // Se a solicitação de escopos falhar por qualquer motivo, seguimos sem
+    // ele — o login no Firebase funciona só com o idToken.
+    String? accessToken;
+    try {
+      final authorization =
+          await account.authorizationClient.authorizeScopes(['email', 'profile']);
+      accessToken = authorization.accessToken;
+    } catch (_) {
+      accessToken = null;
+    }
+
     return GoogleUserData(
       nome: _formatarNome(account.displayName ?? ''),
       email: account.email,
       foto: fotoDataUrl,
       googleId: account.id,
+      idToken: idToken,
+      accessToken: accessToken,
     );
   }
 
@@ -140,10 +159,19 @@ class GoogleUserData {
   final String foto;
   final String googleId;
 
+  /// Token de identidade do Google. Necessário para autenticar no Firebase
+  /// via `FirebaseAuthService.signInWithGoogleCredential`.
+  final String? idToken;
+
+  /// Token de acesso do Google (opcional, mas recomendado pelo Firebase).
+  final String? accessToken;
+
   const GoogleUserData({
     required this.nome,
     required this.email,
     required this.foto,
     required this.googleId,
+    this.idToken,
+    this.accessToken,
   });
 }
