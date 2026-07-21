@@ -2,12 +2,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/app_state.dart';
 import '../services/subscription_service.dart';
 import '../services/web_checkout/checkout_controller.dart';
+
+// Mesma página usada em primeiro_acesso_screen.dart — cobre tanto os
+// Termos de Uso quanto a Política de Privacidade.
+const _urlTermosEPrivacidade =
+    'https://vanefortes.github.io/calc-penas-privacy/';
 
 class PaywallScreen extends StatefulWidget {
   /// Se true, mostra um botão de fechar (uso não bloqueante).
@@ -34,6 +41,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
   WebPackage? _selecionadoWeb;
 
   final WebCheckoutController _webCheckout = WebCheckoutController();
+
+  late final TapGestureRecognizer _termosRecognizer =
+      TapGestureRecognizer()..onTap = _abrirTermosEPrivacidade;
+  late final TapGestureRecognizer _privacidadeRecognizer =
+      TapGestureRecognizer()..onTap = _abrirTermosEPrivacidade;
+
+  Future<void> _abrirTermosEPrivacidade() async {
+    final uri = Uri.parse(_urlTermosEPrivacidade);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  void dispose() {
+    _termosRecognizer.dispose();
+    _privacidadeRecognizer.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -310,10 +334,34 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ),
 
               const SizedBox(height: 6),
-              Text(
-                'A assinatura é renovada automaticamente ao fim de cada período, salvo cancelamento pela ${defaultTargetPlatform == TargetPlatform.android ? 'Google Play Store, em Perfil → Pagamentos e assinaturas → Assinaturas' : 'App Store, em Ajustes → [seu nome] → Assinaturas'}. Ao assinar, você concorda com os Termos de Uso e a Política de Privacidade.',
+              Text.rich(
+                TextSpan(
+                  style: GoogleFonts.inter(fontSize: 10.5, color: cs.onSurface.withOpacity(0.45), height: 1.5),
+                  children: [
+                    TextSpan(
+                      text: 'A assinatura é renovada automaticamente ao fim de cada período, salvo cancelamento pela ${defaultTargetPlatform == TargetPlatform.android ? 'Google Play Store, em Perfil → Pagamentos e assinaturas → Assinaturas' : 'App Store, em Ajustes → [seu nome] → Assinaturas'}. Ao assinar, você concorda com os ',
+                    ),
+                    TextSpan(
+                      text: 'Termos de Uso',
+                      recognizer: _termosRecognizer,
+                      style: TextStyle(
+                        color: cs.onSurface.withOpacity(0.7),
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                    const TextSpan(text: ' e a '),
+                    TextSpan(
+                      text: 'Política de Privacidade',
+                      recognizer: _privacidadeRecognizer,
+                      style: TextStyle(
+                        color: cs.onSurface.withOpacity(0.7),
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 10.5, color: cs.onSurface.withOpacity(0.45), height: 1.5),
               ),
             ],
           ),
