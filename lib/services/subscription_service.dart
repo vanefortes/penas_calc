@@ -167,8 +167,11 @@ class SubscriptionService {
   /// Retorna true se a compra resultou em entitlement ativo.
   Future<PurchaseResult> purchase(Package package) async {
     try {
-      final result = await Purchases.purchasePackage(package);
-      final ativo = result.entitlements.active
+      // A partir do purchases_flutter v9, purchasePackage() retorna o tipo
+      // `PurchaseResult` do próprio SDK (com `customerInfo` e
+      // `storeTransaction`), e não mais um `CustomerInfo` direto como na v8.
+      final sdkResult = await Purchases.purchasePackage(package);
+      final ativo = sdkResult.customerInfo.entitlements.active
           .containsKey(kEntitlementPremium);
       return PurchaseResult(sucesso: ativo);
     } on PlatformException catch (e) {
