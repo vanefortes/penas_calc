@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exclusão de Dados - Calculadora Penal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400;500;600&family=Cormorant+Garamond:ital@1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F8F6F1;
+    color: #1a1a1a;
+    line-height: 1.75;
+    font-size: 15px;
+  }
+
+  header {
+    background: #050A18;
+    padding: 40px 24px 32px;
+    text-align: center;
+    border-bottom: 1px solid rgba(201,169,97,0.3);
+  }
+
+  .header-eyebrow {
+    font-size: 11px;
+    color: rgba(240,212,136,0.6);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .header-title {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    color: #F0D488;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .header-subtitle {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: rgba(232,220,196,0.55);
+  }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .summary-box {
+    background: #fff;
+    border: 1px solid #e0d9c8;
+    border-left: 4px solid #C9A961;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+  }
+
+  .summary-box p {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.7;
+  }
+
+  .summary-box strong { color: #1a1a1a; font-weight: 600; }
+
+  section { margin-bottom: 36px; }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #7A6230;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid #e0d9c8;
+  }
+
+  p { margin-bottom: 12px; color: #333; }
+
+  ol, ul {
+    margin: 8px 0 12px 20px;
+    color: #333;
+  }
+
+  ol li, ul li { margin-bottom: 8px; }
+
+  .step-box {
+    background: #fff;
+    border: 1px solid #e0d9c8;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #050A18;
+    color: #F0D488;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-text { flex: 1; }
+  .step-text p { margin: 0 0 4px 0; font-size: 14px; }
+  .step-text p:last-child { margin-bottom: 0; }
+  .step-text p strong { display: inline; color: #1a1a1a; }
+
+  .badge {
+    display: inline-block;
+    background: #f0ead8;
+    color: #7A6230;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .badge.green { background: #e8f5e9; color: #2e7d32; }
+  .badge.red   { background: #fdecea; color: #c62828; }
+
+  .highlight {
+    background: #fff;
+    border: 1px solid #e0d9c8;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+
+  .highlight p { margin: 0; font-size: 14px; }
+
+  .email-box {
+    background: #050A18;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+
+  .email-box p {
+    color: rgba(232,220,196,0.7);
+    font-size: 13px;
+    margin: 0;
+  }
+
+  .email-box a {
+    color: #F0D488;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    background: #f0ead8;
+    color: #7A6230;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 0.5px solid #e0d9c8;
+    color: #333;
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  footer {
+    background: #050A18;
+    padding: 28px 24px;
+    text-align: center;
+    border-top: 1px solid rgba(201,169,97,0.15);
+  }
+
+  footer p {
+    font-size: 12px;
+    color: rgba(232,220,196,0.3);
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+
+  footer p + p { margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">Calculadora Penal · V Forttes Software Engineering</div>
+  <div class="header-title">EXCLUSÃO DE DADOS</div>
+  <div class="header-subtitle">Como solicitar a exclusão da sua conta e dados</div>
+</header>
+
+<main>
+
+  <div class="summary-box">
+    <p><strong>Resumo:</strong> você pode excluir sua conta e todos os seus dados diretamente pelo app, em uma única ação, sem precisar entrar em contato conosco. Caso prefira, também pode enviar uma solicitação por e-mail.</p>
+  </div>
+
+  <!-- 1 -->
+  <section>
+    <h2>1. Excluir dados diretamente pelo app</h2>
+    <p>A forma mais rápida de excluir seus dados é pelo próprio aplicativo:</p>
+
+    <div class="step-box">
+      <div class="step-number">1</div>
+      <div class="step-text">
+        <p><strong>Abrir Configurações</strong></p>
+        <p>No aplicativo, acesse a aba <strong>Configurações</strong> e role até a seção <strong>Zona de risco</strong>.</p>
+      </div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-number">2</div>
+      <div class="step-text">
+        <p><strong>Excluir conta e dados</strong></p>
+        <p>Toque em <strong>Excluir conta e dados</strong> e confirme nas duas telas de aviso. Essa ação apaga imediatamente o perfil (nome, OAB, e-mail, foto) e o histórico de cálculos salvos no dispositivo, além de encerrar e excluir sua conta de autenticação no Firebase (Google, Apple ou e-mail/senha, conforme o método usado) - tudo em uma única etapa.</p>
+      </div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-number">3</div>
+      <div class="step-text">
+        <p><strong>Desinstalar o app (opcional)</strong></p>
+        <p>Desinstalar o aplicativo também remove qualquer dado eventualmente remanescente no dispositivo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <h2>2. Solicitar exclusão por e-mail</h2>
+    <p>Se preferir enviar uma solicitação formal, entre em contato pelo e-mail abaixo informando:</p>
+    <ul>
+      <li>Nome completo cadastrado no app</li>
+      <li>E-mail vinculado à conta (Google, Apple ou e-mail/senha)</li>
+      <li>Solicitação de exclusão de dados</li>
+    </ul>
+
+    <div class="email-box">
+      <p>Envie sua solicitação para: <a href="mailto:support@vforttes.com">support@vforttes.com</a></p>
+      <p style="margin-top:6px;">Prazo de resposta: até <strong style="color:#F0D488;">7 dias úteis</strong></p>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <h2>3. Quais dados são excluídos</h2>
+
+    <table>
+      <tr>
+        <th>Dado</th>
+        <th>Onde fica salvo</th>
+        <th>Como excluir</th>
+      </tr>
+      <tr>
+        <td>Nome, OAB e e-mail (perfil)</td>
+        <td>Dispositivo (local)</td>
+        <td>Configurações → Excluir conta e dados</td>
+      </tr>
+      <tr>
+        <td>Foto de perfil</td>
+        <td>Dispositivo (local)</td>
+        <td>Configurações → Excluir conta e dados</td>
+      </tr>
+      <tr>
+        <td>Histórico de cálculos</td>
+        <td>Dispositivo (local)</td>
+        <td>Configurações → Excluir conta e dados</td>
+      </tr>
+      <tr>
+        <td>Conta de login (UID, e-mail)</td>
+        <td>Firebase Authentication (Google)</td>
+        <td>Configurações → Excluir conta e dados</td>
+      </tr>
+      <tr>
+        <td>Sessão do Google ou da Apple</td>
+        <td>Dispositivo (local)</td>
+        <td>Configurações → Excluir conta e dados (desconecta automaticamente)</td>
+      </tr>
+    </table>
+
+    <div class="highlight">
+      <div class="badge green">Importante</div>
+      <p>A exclusão pelo app é imediata e irreversível.</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <h2>4. Dados que podem ser mantidos</h2>
+    <div class="highlight">
+      <div class="badge">Observação</div>
+      <p>O status da sua assinatura e o histórico de cobrança continuam registrados pela Apple (App Store) ou pelo Google (Google Play), conforme a plataforma usada para assinar - esses registros seguem as políticas de retenção da própria Apple/Google e não são apagados por nós, já que não os armazenamos. Excluir sua conta no app <strong>não cancela automaticamente</strong> uma assinatura ativa; para cancelar a cobrança recorrente, veja as instruções nos <a href="/terms">Termos de Uso</a>.</p>
+    </div>
+    <div class="highlight">
+      <div class="badge">Observação</div>
+      <p>Após a exclusão da conta e dos dados locais, não retemos nenhuma cópia das suas informações pessoais.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>© 2026 V Forttes Software Engineering</p>
+  <p>Calculadora Penal - Todos os direitos reservados</p>
+</footer>
+
+</body>
+</html>
