@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suporte - Calculadora Penal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0D1B3E;
+    --navy-light:#16295C;
+    --gold:#CFA82C;
+    --gold-soft:#E9D089;
+    --paper:#F7F4EC;
+    --paper-2:#FBFAF6;
+    --ink:#20242F;
+    --ink-60:rgba(32,36,47,0.62);
+    --ink-40:rgba(32,36,47,0.4);
+    --line:rgba(13,27,62,0.14);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.6;
+  }
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    background:
+      radial-gradient(1200px 420px at 15% -10%, rgba(207,168,44,0.10), transparent 60%),
+      linear-gradient(180deg, var(--navy) 0%, var(--navy-light) 100%);
+    color:var(--gold-soft);
+    padding:72px 0 84px;
+    position:relative;
+    overflow:hidden;
+  }
+  header.hero::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:6px;
+    background:linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold) 80%, transparent);
+    opacity:0.7;
+  }
+  .eyebrow{
+    display:flex; align-items:center; gap:10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px; letter-spacing:2.5px; text-transform:uppercase;
+    color:rgba(233,208,137,0.75);
+    margin-bottom:22px;
+  }
+  .eyebrow .dot{width:5px; height:5px; border-radius:50%; background:var(--gold);}
+  .hero h1{
+    font-family:'Cinzel', serif;
+    font-weight:700;
+    font-size:clamp(32px, 5vw, 46px);
+    color:#FBF6E8;
+    letter-spacing:0.3px;
+    margin-bottom:16px;
+  }
+  .hero p{
+    font-size:17px;
+    max-width:520px;
+    color:rgba(251,246,232,0.72);
+    font-weight:400;
+  }
+  .hero-icon{
+    position:absolute; right:-30px; top:-20px;
+    width:230px; height:230px; opacity:0.10;
+  }
+
+  /* ---------- QUICK ACTIONS ---------- */
+  .quick{
+    display:flex; gap:16px; margin-top:40px; flex-wrap:wrap;
+  }
+  .quick a{
+    display:inline-flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(233,208,137,0.35);
+    color:#FBF6E8;
+    padding:13px 22px;
+    border-radius:2px;
+    font-size:14.5px; font-weight:600;
+    text-decoration:none;
+    transition:background 0.2s ease, border-color 0.2s ease;
+  }
+  .quick a.primary{
+    background:var(--gold);
+    color:var(--navy);
+    border-color:var(--gold);
+  }
+  .quick a:hover{ border-color:var(--gold); }
+  .quick a.primary:hover{ background:var(--gold-soft); }
+
+  /* ---------- MAIN ---------- */
+  main{ padding:60px 0 40px; }
+
+  .section-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--ink-40);
+    margin-bottom:8px;
+  }
+  .section-title{
+    font-family:'Cinzel', serif;
+    font-weight:700;
+    font-size:26px;
+    color:var(--navy);
+    margin-bottom:36px;
+  }
+
+  /* ---------- FAQ AS "ARTIGOS" ---------- */
+  .articles{ counter-reset: artigo; }
+  .article{
+    counter-increment: artigo;
+    position:relative;
+    padding:28px 0 28px 0;
+    border-top:1px solid var(--line);
+  }
+  .article:last-child{ border-bottom:1px solid var(--line); }
+  .article-head{
+    display:flex; align-items:baseline; gap:14px; margin-bottom:10px;
+  }
+  .article-num{
+    font-family:'Cinzel', serif;
+    font-weight:700;
+    color:var(--gold);
+    font-size:14px;
+    letter-spacing:0.5px;
+    white-space:nowrap;
+    padding-top:3px;
+  }
+  .article-num::before{
+    content: "Art. " counter(artigo) "º §";
+  }
+  .article h3{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:18px;
+    color:var(--navy);
+  }
+  .article p{
+    font-size:15.5px;
+    color:var(--ink-60);
+    padding-left:0;
+    max-width:620px;
+  }
+
+  /* ---------- CONTACT CARD ---------- */
+  .contact{
+    margin-top:64px;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-left:3px solid var(--gold);
+    padding:40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .contact h3{
+    font-family:'Cinzel', serif;
+    font-size:20px;
+    color:var(--navy);
+    margin-bottom:8px;
+  }
+  .contact p{ font-size:14.5px; color:var(--ink-60); max-width:380px;}
+  .contact .email-btn{
+    display:inline-flex; align-items:center; gap:10px;
+    background:var(--navy);
+    color:var(--gold-soft);
+    padding:15px 26px;
+    font-weight:600;
+    font-size:15px;
+    text-decoration:none;
+    white-space:nowrap;
+    border-radius:2px;
+    transition:background 0.2s ease;
+  }
+  .contact .email-btn:hover{ background:var(--navy-light); }
+  .response-note{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-40);
+    margin-top:14px;
+    display:block;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    margin-top:70px;
+    padding:30px 0 50px;
+    border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  }
+  footer .brand{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Cinzel', serif; font-weight:700; color:var(--navy); font-size:14.5px;
+  }
+  footer .meta{ font-size:13px; color:var(--ink-40); }
+
+  @media (max-width:600px){
+    .contact{ flex-direction:column; align-items:flex-start; }
+    .contact .email-btn{ width:100%; justify-content:center; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="hero">
+    <svg class="hero-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 8 L50 92 M28 20 L72 20 M15 30 L38 30 L26.5 55 A13 13 0 0 0 15 30 Z M85 30 L62 30 L73.5 55 A13 13 0 0 0 85 30 Z M35 92 L65 92" stroke="#E9D089" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="wrap">
+      <div class="eyebrow"><span class="dot"></span> Calculadora Penal · Central de Suporte</div>
+      <h1>Como podemos ajudar?</h1>
+      <p>Tire dúvidas sobre cálculo de penas, projeção de datas, exportação em PDF, assinaturas e privacidade dos seus dados.</p>
+      <div class="quick">
+        <a href="#faq">Ver perguntas frequentes</a>
+        <a href="mailto:support@vforttes.com" class="primary">Falar com o suporte →</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+
+      <section id="faq">
+        <div class="section-label">Dúvidas comuns</div>
+        <h2 class="section-title">Perguntas frequentes</h2>
+
+        <div class="articles">
+          <div class="article">
+            <div class="article-head">
+              <span class="article-num"></span>
+              <h3>Como funciona o cálculo de conversão de penas?</h3>
+            </div>
+            <p>Você informa o período em anos, meses e dias - ou o total em dias/meses - e escolhe o critério de cálculo (Padrão, TJSP, STJ, entre outros). O app converte automaticamente entre as unidades, com casas decimais configuráveis.</p>
+          </div>
+
+          <div class="article">
+            <div class="article-head">
+              <span class="article-num"></span>
+              <h3>Como funciona a projeção de progressão de regime?</h3>
+            </div>
+            <p>Informe a data-base e o tempo de pena; escolha a fração aplicável (1/6, 1/4, 1/3, 2/5, 1/2, 3/5 ou 2/3). O app calcula automaticamente a data de progressão e a data final de cumprimento.</p>
+          </div>
+
+          <div class="article">
+            <div class="article-head">
+              <span class="article-num"></span>
+              <h3>Meus dados e cálculos ficam salvos onde?</h3>
+            </div>
+            <p>Seu perfil (nome, OAB) e o histórico de cálculos ficam salvos exclusivamente no seu dispositivo. O login (Google, Apple ou e-mail/senha) e o gerenciamento da assinatura exigem conexão com a internet e envolvem o Firebase, a Apple, o Google e/ou a RevenueCat - veja detalhes na nossa <a href="/privacy">Política de Privacidade</a>.</p>
+          </div>
+
+          <div class="article">
+            <div class="article-head">
+              <span class="article-num"></span>
+              <h3>Como cancelo minha assinatura?</h3>
+            </div>
+            <p>No iOS: Ajustes → [seu nome] → Assinaturas. No Android: Google Play Store → Perfil → Pagamentos e assinaturas → Assinaturas. O cancelamento evita a próxima cobrança, mas o acesso continua ativo até o fim do período já pago.</p>
+          </div>
+
+          <div class="article">
+            <div class="article-head">
+              <span class="article-num"></span>
+              <h3>Como ativo a proteção por biometria?</h3>
+            </div>
+            <p>Acesse Configurações → Segurança → Bloqueio por biometria. Uma vez ativado, o app solicitará Face ID ou Touch ID sempre que for aberto.</p>
+          </div>
+
+          <div class="article">
+            <div class="article-head">
+              <span class="article-num"></span>
+              <h3>Como gero um PDF do meu cálculo?</h3>
+            </div>
+            <p>Depois de calcular, toque em "PDF" na tela de resultados. O relatório sai pronto com seus dados cadastrais (nome e OAB), ideal para anexar a petições e pareceres.</p>
+          </div>
+
+          <div class="article">
+            <div class="article-head">
+              <span class="article-num"></span>
+              <h3>Encontrei um resultado que parece incorreto. O que faço?</h3>
+            </div>
+            <p>Todos os resultados são informativos e devem ser conferidos com a legislação aplicável ao caso concreto. Se identificar uma inconsistência no cálculo em si, escreva para o suporte descrevendo os valores usados - vamos verificar o quanto antes.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="contact">
+        <div>
+          <h3>Não encontrou sua resposta?</h3>
+          <p>Escreva para o suporte com o máximo de detalhes possível - inclui o modelo do aparelho e os valores usados no cálculo, se for o caso.</p>
+          <span class="response-note">Retorno em até 2 dias úteis</span>
+        </div>
+        <a class="email-btn" href="mailto:support@vforttes.com">✉ support@vforttes.com</a>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; width:100%;">
+      <div class="brand">⚖ Calculadora Penal</div>
+      <div class="meta">Versão 1.0.0 · © 2026 V FORTTES. Todos os direitos reservados.</div>
+    </div>
+  </footer>
+
+</body>
+</html>
