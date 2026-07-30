@@ -11,10 +11,8 @@ import '../services/app_state.dart';
 import '../services/subscription_service.dart';
 import '../services/web_checkout/checkout_controller.dart';
 
-// Mesma página usada em primeiro_acesso_screen.dart — cobre tanto os
-// Termos de Uso quanto a Política de Privacidade.
-const _urlTermosEPrivacidade =
-    'https://vanefortes.github.io/calc-penas-privacy/';
+const _urlTermosDeUso = 'https://calcpenas.vforttes.com/terms';
+const _urlPoliticaDePrivacidade = 'https://calcpenas.vforttes.com/privacy';
 
 class PaywallScreen extends StatefulWidget {
   /// Se true, mostra um botão de fechar (uso não bloqueante).
@@ -43,12 +41,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
   final WebCheckoutController _webCheckout = WebCheckoutController();
 
   late final TapGestureRecognizer _termosRecognizer =
-      TapGestureRecognizer()..onTap = _abrirTermosEPrivacidade;
+      TapGestureRecognizer()..onTap = _abrirTermosDeUso;
   late final TapGestureRecognizer _privacidadeRecognizer =
-      TapGestureRecognizer()..onTap = _abrirTermosEPrivacidade;
+      TapGestureRecognizer()..onTap = _abrirPoliticaDePrivacidade;
 
-  Future<void> _abrirTermosEPrivacidade() async {
-    final uri = Uri.parse(_urlTermosEPrivacidade);
+  Future<void> _abrirTermosDeUso() async {
+    final uri = Uri.parse(_urlTermosDeUso);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _abrirPoliticaDePrivacidade() async {
+    final uri = Uri.parse(_urlPoliticaDePrivacidade);
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
