@@ -46,7 +46,7 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
   bool _concluindo = false;
 
   static const _urlTermosDeUso =
-      'https://vanefortes.github.io/calc-penas-privacy/';
+      'https://calcpenas.vforttes.com/terms';
 
   late final TapGestureRecognizer _termosRecognizer =
       TapGestureRecognizer()..onTap = _abrirTermosDeUso;
