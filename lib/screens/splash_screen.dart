@@ -373,7 +373,7 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     final ano = DateTime.now().year;
     return Column(children: [
-      Text('Copyright © $ano V Fortttes Inc.', style: GoogleFonts.cormorantGaramond(fontSize: 12, color: CpColors.textFaint)),
+      Text('Copyright © $ano V Forttes Inc.', style: GoogleFonts.cormorantGaramond(fontSize: 12, color: CpColors.textFaint)),
       const SizedBox(height: 4),
       Text('Todos os direitos reservados', style: GoogleFonts.cinzel(
           fontWeight: FontWeight.w500, fontSize: 11, color: CpColors.textDim, letterSpacing: 11 * 0.22)),

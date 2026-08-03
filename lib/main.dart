@@ -390,7 +390,7 @@ class _Rodape extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Copyright © $ano V Fortttes Inc.',
+            'Copyright © $ano V Forttes Inc.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               fontSize: 11,
