@@ -34,7 +34,7 @@ const String kCheckSubscriptionUrl =
 /// "Calculadora Penal (RevenueCat Billing)" → Show key.
 /// Troque pela chave de PRODUÇÃO quando for lançar de verdade — a sandbox
 /// só processa pagamentos de teste do Stripe.
-const String kWebBillingApiKey = 'rcb_sb_jamCGpCEjTQGXOvZitgTIFtiY';
+const String kWebBillingApiKey = 'rcb_NTtnZPJTolevHmUIxXfJqwvOGRbq';
 
 /// API Key pública do RevenueCat para iOS.
 const String _revenueCatApiKeyIOS = 'appl_MrEXJipELQsyFqXAJVOozHxkeiI';
