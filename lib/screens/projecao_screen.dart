@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -26,15 +27,21 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
   ResultadoProjecao? _resultado;
   String? _erro;
 
+  // Frações e seus percentuais equivalentes exibidos juntos (ex: "2/5 da pena (40%)").
+  // 1/6, 1/3 e 2/3 não são exatos em percentual — usamos "≈" com arredondamento,
+  // no mesmo padrão já usado para 1/6.
   static const _fracoes = [
     (valor: 1.0, label: 'Pena total'),
-    (valor: 0.16666666666666666, label: '1/6 da pena'),
-    (valor: 0.25, label: '1/4 da pena'),
-    (valor: 0.3333333333333333, label: '1/3 da pena'),
-    (valor: 0.4, label: '2/5 da pena'),
-    (valor: 0.5, label: '1/2 da pena'),
-    (valor: 0.6, label: '3/5 da pena'),
-    (valor: 0.6666666666666666, label: '2/3 da pena'),
+    (valor: 0.16666666666666666, label: '1/6 da pena (≈16%)'),
+    (valor: 0.2, label: '1/5 da pena (20%)'),
+    (valor: 0.25, label: '1/4 da pena (25%)'),
+    (valor: 0.3, label: '3/10 da pena (30%)'),
+    (valor: 0.3333333333333333, label: '1/3 da pena (≈33%)'),
+    (valor: 0.4, label: '2/5 da pena (40%)'),
+    (valor: 0.5, label: '1/2 da pena (50%)'),
+    (valor: 0.6, label: '3/5 da pena (60%)'),
+    (valor: 0.6666666666666666, label: '2/3 da pena (≈67%)'),
+    (valor: 0.7, label: '7/10 da pena (70%)'),
   ];
 
   @override
@@ -97,7 +104,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
     final modo = context.read<AppState>().modoCalculo;
     final fracaoLabel = _fracoes
         .firstWhere((f) => (f.valor - _fracao).abs() < 0.001,
-            orElse: () => _fracoes.first)
+        orElse: () => _fracoes.first)
         .label;
     final res = CalculoEngine.projetarData(
       dataInicio: _dataInicio!,
@@ -111,15 +118,15 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
     setState(() => _resultado = res);
 
     context.read<AppState>().addHistorico(HistoricoItem(
-          id: DateTime.now().toIso8601String(),
-          timestamp: DateTime.now(),
-          tipo: 'Projeção',
-          entrada: '${_fmtDate(_dataInicio!)} + ${a}a ${m}m ${d}d',
-          saida:
-              'Término: ${_fmtDate(res.dataFim)}${res.dataFracao != null ? " · Fração: ${_fmtDate(res.dataFracao!)}" : ""}',
-          modo: modo.nome,
-          progressao: _progressao,
-        ));
+      id: DateTime.now().toIso8601String(),
+      timestamp: DateTime.now(),
+      tipo: 'Projeção',
+      entrada: '${_fmtDate(_dataInicio!)} + ${a}a ${m}m ${d}d',
+      saida:
+      'Término: ${_fmtDate(res.dataFim)}${res.dataFracao != null ? " · Fração: ${_fmtDate(res.dataFracao!)}" : ""}',
+      modo: modo.nome,
+      progressao: _progressao,
+    ));
     appState.registrarCalculoGratis();
   }
 
@@ -136,9 +143,26 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
     });
   }
 
+  /// Calcula o restante (pena total − fração selecionada) em dias, já
+  /// decomposto em anos/meses/dias. Retorna null se nenhuma fração foi
+  /// aplicada (ex: "Pena total" selecionada).
+  ({int dias, PeriodoDecomposto periodo})? _calcularRestante(
+      ResultadoProjecao r, ModoCalculo modo) {
+    if (r.diasFracao == null) return null;
+    final totalDias = r.periodo.totalDias.round();
+    final diferencaDias = totalDias - r.diasFracao!;
+    final decomp = CalculoEngine.converter(
+      totalDiasInput: diferencaDias.toDouble(),
+      modo: modo,
+      dataBase: _dataInicio,
+    );
+    return (dias: diferencaDias, periodo: decomp);
+  }
+
   String _textoParaCopiar() {
     if (_resultado == null) return '';
     final modo = context.read<AppState>().modoCalculo;
+    final restante = _calcularRestante(_resultado!, modo);
     return 'Calculadora de Penas — Projeção de Data\n'
         'Início: ${_fmtDate(_dataInicio!)}\n'
         'Pena: ${_anosCtrl.text}a ${_mesesCtrl.text}m ${_diasCtrl.text}d\n'
@@ -146,6 +170,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
         '(${_fmtDiaSemana(_resultado!.dataFim)})\n'
         'Total: ${_fmtNum(_resultado!.periodo.totalDias)} dias\n'
         '${_resultado!.dataFracao != null ? "Fração (${_resultado!.nomeFracao}): ${_fmtDate(_resultado!.dataFracao!)}\n" : ""}'
+        '${restante != null ? "Diferença (pena − fração): ${_fmtNum(restante.dias.toDouble())} dias (${restante.periodo.anos}a ${restante.periodo.meses}m ${restante.periodo.dias}d)\n" : ""}'
         'Modo: ${modo.nome}\n'
         '${_progressao ? "Progressão de regime: cálculo em dias exatos\n" : ""}'
         'Data do cálculo: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}';
@@ -155,6 +180,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
     if (_resultado == null || _dataInicio == null) return;
     final state = context.read<AppState>();
     final r = _resultado!;
+    final restante = _calcularRestante(r, state.modoCalculo);
     await PdfProjecao.gerar(
       dataInicio:   _fmtDate(_dataInicio!),
       pena:         '${_anosCtrl.text}a ${_mesesCtrl.text}m ${_diasCtrl.text}d',
@@ -163,6 +189,10 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
       totalDias:    _fmtNum(r.periodo.totalDias),
       fracao:       r.nomeFracao ?? '',
       dataFracao:   r.dataFracao != null ? _fmtDate(r.dataFracao!) : '',
+      restanteDias: restante != null ? '${_fmtNum(restante.dias.toDouble())} dias' : '',
+      restantePeriodo: restante != null
+          ? '${restante.periodo.anos}a ${restante.periodo.meses}m ${restante.periodo.dias}d'
+          : '',
       detalhes:     r.detalhes,
       modoCalculo:  state.modoCalculo.nome,
       nome:         state.usuarioNome,
@@ -189,6 +219,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
             Expanded(child: TextField(
               controller: _anosCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(labelText: 'Anos de pena'),
               onChanged: (_) => setState(() => _erro = null),
             )),
@@ -196,6 +227,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
             Expanded(child: TextField(
               controller: _mesesCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(labelText: 'Meses de pena'),
               onChanged: (_) => setState(() => _erro = null),
             )),
@@ -203,6 +235,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
             Expanded(child: TextField(
               controller: _diasCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(labelText: 'Dias de pena'),
               onChanged: (_) => setState(() => _erro = null),
             )),
@@ -212,13 +245,13 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
             value: _fracao,
             items: _fracoes
                 .map((f) => DropdownMenuItem(
-                    value: f.valor, child: Text(f.label)))
+                value: f.valor, child: Text(f.label)))
                 .toList(),
             onChanged: (v) => setState(() => _fracao = v ?? 1.0),
             decoration: const InputDecoration(
               labelText: 'Fração para progressão',
               prefixIcon:
-                  Icon(Icons.gavel_rounded, size: 18),
+              Icon(Icons.gavel_rounded, size: 18),
             ),
           ),
           const SizedBox(height: 10),
@@ -299,7 +332,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
             color: _dataInicio != null
                 ? AppTheme.accentColor(context).withOpacity(0.5)
                 : Theme.of(context).dividerTheme.color ??
-                    Colors.grey.withOpacity(0.3),
+                Colors.grey.withOpacity(0.3),
             width: _dataInicio != null ? 1.5 : 0.5,
           ),
         ),
@@ -336,13 +369,13 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
                         : FontWeight.w400,
                     color: _dataInicio != null
                         ? Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.color
+                        .textTheme
+                        .titleMedium
+                        ?.color
                         : Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.color,
+                        .textTheme
+                        .labelSmall
+                        ?.color,
                   ),
                 ),
               ],
@@ -351,6 +384,54 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
           Icon(Icons.chevron_right_rounded,
               color: Theme.of(context).textTheme.labelSmall?.color),
         ]),
+      ),
+    );
+  }
+
+  Widget _buildDiferencaBox(ResultadoProjecao r, ModoCalculo modo) {
+    final restante = _calcularRestante(r, modo)!;
+    final diferencaDias = restante.dias;
+    final decomp = restante.periodo;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.warningBg(context),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: AppTheme.warningColor(context).withOpacity(0.4),
+            width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'DIFERENÇA (PENA − FRAÇÃO)',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              color: AppTheme.warningColor(context),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${_fmtNum(diferencaDias.toDouble())} dias',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.warningColor(context),
+            ),
+          ),
+          Text(
+            '${decomp.anos}a ${decomp.meses}m ${decomp.dias}d',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: AppTheme.warningColor(context).withOpacity(0.8),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -404,7 +485,7 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                   color:
-                      AppTheme.accentColor(context).withOpacity(0.4),
+                  AppTheme.accentColor(context).withOpacity(0.4),
                   width: 1.5),
             ),
             child: Column(
@@ -511,6 +592,10 @@ class _ProjecaoScreenState extends State<ProjecaoScreen> {
                 label: 'Meses + Dias',
                 value: '${r.periodo.meses}m ${r.periodo.dias}d')),
           ]),
+          if (r.dataFracao != null) ...[
+            const SizedBox(height: 8),
+            _buildDiferencaBox(r, modo),
+          ],
           const SizedBox(height: 12),
           FormulaBox(text: _resultado!.detalhes),
           const SizedBox(height: 10),

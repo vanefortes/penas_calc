@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -273,11 +274,11 @@ class _ConverterScreenState extends State<ConverterScreen> {
   Widget _buildInputFields() {
     if (_inputMode == InputMode.amd) {
       return Row(children: [
-        Expanded(child: _field('Anos', _anosCtrl)),
+        Expanded(child: _fieldInteiro('Anos', _anosCtrl)),
         const SizedBox(width: 8),
-        Expanded(child: _field('Meses', _mesesCtrl)),
+        Expanded(child: _fieldInteiro('Meses', _mesesCtrl)),
         const SizedBox(width: 8),
-        Expanded(child: _field('Dias', _diasCtrl)),
+        Expanded(child: _fieldInteiro('Dias', _diasCtrl)),
       ]);
     }
     if (_inputMode == InputMode.totalDias) {
@@ -326,11 +327,27 @@ class _ConverterScreenState extends State<ConverterScreen> {
     return _field('Total em meses', _totalMesesCtrl);
   }
 
+  /// Aceita dígitos e ponto decimal (o parser usa `double.tryParse`, que
+  /// exige `.` — não vírgula). Usado em "Total em dias" e "Total em meses".
   Widget _field(String label, TextEditingController ctrl) =>
       TextField(
         controller: ctrl,
         keyboardType:
             const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+        ],
+        decoration: InputDecoration(labelText: label),
+        onChanged: (_) => setState(() => _erro = null),
+      );
+
+  /// Igual a `_field`, mas restrito a números inteiros — usado nos campos
+  /// Anos/Meses/Dias, que não fazem sentido em valor fracionário.
+  Widget _fieldInteiro(String label, TextEditingController ctrl) =>
+      TextField(
+        controller: ctrl,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(labelText: label),
         onChanged: (_) => setState(() => _erro = null),
       );
