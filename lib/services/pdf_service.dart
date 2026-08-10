@@ -329,6 +329,8 @@ class PdfProjecao {
     required String totalDias,
     required String fracao,
     required String dataFracao,
+    String restanteDias = '',
+    String restantePeriodo = '',
     required String detalhes,
     required String modoCalculo,
     required String nome,
@@ -356,6 +358,14 @@ class PdfProjecao {
               PdfItem(label: 'TOTAL EM DIAS',   valor: totalDias,   largura: 150),
               if (fracao.isNotEmpty)
                 PdfItem(label: 'FRAÇÃO ($fracao)', valor: dataFracao, largura: 200),
+              if (restanteDias.isNotEmpty)
+                PdfItem(
+                  label: 'DIFERENÇA (PENA − FRAÇÃO)',
+                  valor: restantePeriodo.isNotEmpty
+                      ? '$restanteDias ($restantePeriodo)'
+                      : restanteDias,
+                  largura: 200,
+                ),
             ],
             obs: detalhes,
           ),
