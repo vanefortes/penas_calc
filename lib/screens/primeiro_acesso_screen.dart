@@ -135,7 +135,26 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
           )
           .then((_) {
         if (!mounted) return;
-        setState(() {});
+        // A Apple só reenvia e-mail/nome na primeira autorização do
+        // usuário a este app — em autorizações seguintes eles vêm vazios,
+        // por design de privacidade. O cache local (AppleAuthService) só
+        // ajuda se for o MESMO aparelho de antes; em um device novo (ou
+        // após reinstalar o app), o cache está vazio.
+        //
+        // Como fallback final, usamos o e-mail já associado à conta no
+        // Firebase Auth: ele foi salvo lá desde a primeira autenticação
+        // dessa Apple ID com este app (em qualquer aparelho) e continua
+        // disponível em `currentUser`, independente do que a Apple
+        // reenvia agora.
+        final emailFirebase =
+            FirebaseAuthService.instance.currentUser?.email;
+        if (_email.text.isEmpty &&
+            emailFirebase != null &&
+            emailFirebase.isNotEmpty) {
+          setState(() => _email.text = emailFirebase);
+        } else {
+          setState(() {});
+        }
         context.read<AppState>().reidentificarAssinatura();
       }).catchError((Object e) {
         debugPrint('Falha ao autenticar no Firebase com Apple: $e');
@@ -193,8 +212,20 @@ class _PrimeiroAcessoScreenState extends State<PrimeiroAcessoScreen> {
     }
 
     final nome  = _nome.text.trim();
-    final email = _email.text.trim();
+    var email = _email.text.trim();
     final oab   = _oab.text.trim();
+
+    // Segunda camada de proteção: se o e-mail ainda não foi preenchido
+    // (ex: usuário clicou em "Acessar Aplicativo" antes da troca de
+    // credenciais com o Firebase terminar em segundo plano), tenta
+    // recuperar do Firebase Auth antes de bloquear o usuário.
+    if (email.isEmpty) {
+      final emailFirebase = FirebaseAuthService.instance.currentUser?.email;
+      if (emailFirebase != null && emailFirebase.isNotEmpty) {
+        email = emailFirebase;
+        setState(() => _email.text = email);
+      }
+    }
 
     if (nome.isEmpty) {
       _mostrarErro('O nome é obrigatório para continuar.');
