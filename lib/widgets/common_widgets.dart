@@ -118,7 +118,7 @@ class AvisoLegal extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Resultado informativo, confirmar com legislação aplicável e documentação do processo.',
+              'Resultado Informativo: Confirmar com legislação aplicável e documentação do processo.',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppTheme.warningColor(context),
