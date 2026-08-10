@@ -167,7 +167,7 @@ class ConfiguracaoScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'Resultados informativos — confirmar com legislação aplicável e documentação do processo.',
+              'Resultados Informativos: Confirmar com legislação aplicável e documentação do processo.',
               style: GoogleFonts.inter(
                   fontSize: 12,
                   height: 1.5,
